@@ -289,8 +289,11 @@
 <script>
   // На GAS scriptlets подставляют значения; на GitHub Pages остаются literal —
   // тогда берём uid/t из query-параметров персональной ссылки.
+  // ВАЖНО: последовательность «меньше+вопрос» в коде шаблона нельзя писать
+  // слитно даже в строке — парсер HtmlService примет её за скриптлет и
+  // уронит evaluate() ошибкой «SyntaxError … MiniApp line 44».
   let UID = '<?= uid ?>', TOKEN = '<?= token ?>';
-  if (UID.indexOf('<?') === 0) {
+  if (UID.indexOf('<' + '?') === 0) {
     const q = new URLSearchParams(location.search);
     UID = q.get('uid') || '';
     TOKEN = q.get('t') || '';
