@@ -678,10 +678,14 @@
         return n2.getFullYear() + ('0' + (n2.getMonth() + 1)).slice(-2) + ('0' + n2.getDate()).slice(-2);
       })();
       st.sched.forEach(function(s2){
+        // Данные из ячеек листа — только textContent, никакого innerHTML
         const r = document.createElement('div');
         r.className = 'srow' + (s2.ds === todayDs ? ' today' : '');
-        r.innerHTML = '<span>' + s2.d + (s2.ds === todayDs ? ' · ' + d().schedToday : '') + '</span>' +
-          '<b>' + s2.s + '–' + s2.e + '</b>';
+        const left = document.createElement('span');
+        left.textContent = s2.d + (s2.ds === todayDs ? ' · ' + d().schedToday : '');
+        const right = document.createElement('b');
+        right.textContent = s2.s + '–' + s2.e;
+        r.appendChild(left); r.appendChild(right);
         sl.appendChild(r);
       });
     } else {
@@ -692,8 +696,14 @@
     const ava = document.getElementById('ava');
     let avaSrc = st.avatar;
     if (avaSrc === undefined) { try { avaSrc = localStorage.getItem('tb_ava') || ''; } catch (e) { avaSrc = ''; } }
-    if (avaSrc) ava.innerHTML = '<img src="' + avaSrc + '" alt="">';
-    else ava.textContent = initials(st.name);
+    if (avaSrc) {
+      ava.textContent = '';
+      const ai = document.createElement('img');
+      ai.src = avaSrc; ai.alt = '';
+      ava.appendChild(ai);
+    } else {
+      ava.textContent = initials(st.name);
+    }
 
     // Иллюстрация по выбранному типу отпуска
     const ti = (st.types || []).map(function(tp){ return tp.v; }).indexOf(vacType);
@@ -716,8 +726,12 @@
       st.vacations.forEach(function(v){
         const r = document.createElement('div');
         r.className = 'vrow';
-        r.innerHTML = '<span>' + v.id + ' · ' + v.period + '</span>' +
-          '<span class="vst ' + v.status + '">' + v.status + '</span>';
+        const left = document.createElement('span');
+        left.textContent = v.id + ' · ' + v.period;
+        const st2 = document.createElement('span');
+        st2.className = 'vst ' + v.status;
+        st2.textContent = v.status;
+        r.appendChild(left); r.appendChild(st2);
         vl.appendChild(r);
       });
     }
