@@ -139,6 +139,18 @@
   .days{font-size:13px;color:var(--primary);font-weight:800;margin:6px 0 8px;min-height:18px}
   textarea{width:100%;padding:12px;border:1.5px solid #e4e7ec;border-radius:13px;
     font-size:15px;font-family:inherit;background:#f8fafc;resize:none;height:64px}
+  .fld{width:100%;margin-top:5px;padding:12px 10px;border:1.5px solid #e4e7ec;
+    border-radius:13px;font-size:15px;background:#f8fafc;font-family:inherit;
+    transition:border-color .2s,box-shadow .2s}
+  .fld:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+  .flbl{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
+  .frow{display:flex;gap:10px;margin-bottom:6px}
+  .frow>label{flex:1}
+  .del{border:0;background:#fee4e2;color:#b42318;border-radius:9px;width:28px;height:28px;
+    font-weight:800;cursor:pointer;flex:none;margin-left:8px}
+  .srow{display:flex;align-items:center;background:#f8fafc;border-radius:13px;
+    padding:10px 12px;font-size:13px;font-weight:600;justify-content:space-between}
+  .srow.today{background:#e0e7ff}
   .vlist{display:flex;flex-direction:column;gap:8px}
   .vrow{display:flex;justify-content:space-between;align-items:center;background:#f8fafc;
     border-radius:13px;padding:11px 13px;font-size:13px;font-weight:600}
@@ -233,6 +245,11 @@
         <div id="actions"></div>
       </div>
 
+      <div class="card" id="schedCard" style="display:none">
+        <h3><svg class="ic"><use href="#i-cal"/></svg><span id="hSched"></span></h3>
+        <div class="vlist" id="schedList"></div>
+      </div>
+
       <div class="card">
         <h3><svg class="ic"><use href="#i-chart"/></svg><span id="hHours"></span></h3>
         <div class="stats">
@@ -266,6 +283,29 @@
         <div class="vlist" id="vlist"></div>
       </div>
     </section>
+
+    <!-- Страница «Админ»: график смен (видна только role=admin) -->
+    <section class="page" id="pgAdm">
+      <div class="card">
+        <h3><svg class="ic"><use href="#i-cal"/></svg><span id="hAdm"></span></h3>
+        <label class="flbl" id="lAdmEmp"></label>
+        <select class="fld" id="admEmp"></select>
+        <div class="frow" style="margin-top:10px">
+          <label><span class="flbl" id="lAdmFrom"></span><input class="fld" type="date" id="admFrom"></label>
+          <label><span class="flbl" id="lAdmTo"></span><input class="fld" type="date" id="admTo"></label>
+        </div>
+        <div class="frow">
+          <label><span class="flbl" id="lAdmStart"></span><input class="fld" type="time" id="admStart" value="09:00"></label>
+          <label><span class="flbl" id="lAdmEnd"></span><input class="fld" type="time" id="admEnd" value="18:00"></label>
+        </div>
+        <input class="fld" type="text" id="admNote" maxlength="200">
+        <button class="btn b-blue" id="admBtn" onclick="admAssign()"></button>
+      </div>
+      <div class="card">
+        <h3><svg class="ic"><use href="#i-chart"/></svg><span id="hAdmList"></span></h3>
+        <div class="vlist" id="admList" style="margin-top:0"></div>
+      </div>
+    </section>
   </div>
 
   <!-- Нижняя навигация -->
@@ -275,6 +315,9 @@
     </button>
     <button class="tab" id="tabVac" onclick="showPage('vac')">
       <img class="tic" src="data:image/webp;base64,UklGRrgFAABXRUJQVlA4IKwFAACwGgCdASpgAGAAPmEskUakIqGhKPgKwIAMCWQA0exs0TdVAp/5eyv6CNtr/SfQB52Hog/33o5dQZvLH95oHfQGFczlZJjlnWVqa979b0jb9ELQS9S+wP+unpO+yX0KDCNbh5sYUqlc9B/JsJuuprH+4t9c8dTIuM29lr4d8Dk7KijDC8j1fq2DivE0Oo37R60VAEdUOXPHlSVbQ0AhpOkdRtOGOfCrl3kzEiEy89vpt5T0NJ3Rjs7OHkW/4/7oA7x52YvWUTHRQ3Jw3PGsbTtocfuCAN83P+eLjRvXZQAA/v8U3SVFJxA6OuDzBTsUjekB08PC7RNGRRq6Q9snc1e4uu7SLRbdRCDhcpuu1DqdbRSPZikXuv3qxSSq/0m9i/IDZnuRQZXukYdTP5EEhP06DZVW5tq7CZobKiuZmcZsI9R7AAP2Z4aWsUEla/PDT2cXQheIYM9Or8+bBXTxmf49nqZIFHODp7/4DQVyiSOx8jOaaUD/Vn+3Kd+Zlt+atR6b0eFYOYhYnffkSawxHI+7hD104eKm1mma4D6lfSKnQ5TlzITfUhKbJ2D6ImwthIBIM5j0NolL7vCkAH7Vp4NzaR8iSuDPbe01K5UwbJk/8+td6fHGWCMP1Ny3wcItNpWAlMiYvsksvx3A/ilgSNbD8DSq1Nr2Fbp/aGqxyfBMMfgYhS/liBaKM3x/66W0v8TreV2j6i5pBkZFoSQ97s2hHq3hluo/b6GtuhwfBTTnmednp1ZlWIkAdczRQIfSb0zdD1Hsn/YMok8Eawhf3RgK0IAeSTnCC0XFrFeAa16w1hZjRk7nxYQ2mHEiHYGSeL7ZaziC8q2eHklPMXFypi6pfJGlQgP2HIVtf87LWb3+5gasxnVeF7tJZTIPorjjZvWBqo9CuvKd3DP2aUlZFlaQHRa2VjeC8POm9m+gY84vbByRGrN55ZKysSm6FeZkP3FTcAqiv+gj/zfkbDTRVfKTLKQa17lDXj2gqRHCJHd+t6Q3y/ueoZgU5+yUX31Ax4OUHcWgN68YYlxKFmk4Bv3qm0scwm2JLpU7j1VI99F5Y2BdQA9WX+hIR6kuCNGTPFR6f9xFbfdJFnGWdMWSoGkVPQ1AiaFcx8CGYEbX4vM+bfu/OB1JGJqyUOnA1Kc76Pf3V0dN/lxE/8/+Ha7AHCg0a4w493hQArw1h81j+FEMzd9CcR+cChTdYS7x5AOfjnRBe3NFEvCrg5A3y6MxSx+jV5E30W1g/4T20woUSoq92GaU5aFGWY3c1vI6jtH+Rfef8CmT8wnW4N99L0VWu/9WEIDXoTn+fd/oYLq8T3MHMypSF/8yqBUbrbTjacNjlWOIykLeXaMlatg2sXeU7RCIWEgQGaHbWdpU+Ld96hylkyORjb4pMSVByLzBdSFIIm6UwC+Mdsx41nTg/kZmtYzriY1M11Z2udlrSZdxmlP2LD+qQ+2o35jOeVpZusfnNUeagRc90rHljKFOP6Zs5ettVvRRnXis//pcq6hVew7y4dkxaB4GP4OdafY2JXWhJevgVdLr9dLCi3cP2yvo3LRC/8ropbgV88u80bnjr+6MVOzXw7yNgbc7I7QLh9821JwsERyS1nNtNhwp13GpBeZ5mcq+OBq6wYMVIbY+qwW+5udnkNdZLp6AEUZZZEamGMnMbUT2/8QJKANMRbALYXP+i3ARKKq4E6ApTTlHrd4l02DppErH7T523129QlvxxDTiT1/Pc12tZN/FrzU4XLBQ6TiYA8kxoz5TF58SrVS4p3oZ1YbPzqGES9XBZTo/+W/v/J8TjDxboB7Z+jByr/4ewqw0fdh+UKM4gbwjUkX8NtlAq6+u+TeZCJHWAadC5PvYkg1RVDsQwLBaAJod8esyvpPQQi5rqs5l5rfLqn6sjk06l4h2MeSYa+ATXT7/TnN6fr3EOJCWBecAAAA=" alt=""><span id="tVac"></span>
+    </button>
+    <button class="tab" id="tabAdm" onclick="showPage('adm')" style="display:none">
+      <svg class="ic"><use href="#i-cal"/></svg><span id="tAdm"></span>
     </button>
   </nav>
   <input type="file" id="avaFile" accept="image/*" style="display:none">
@@ -321,6 +364,9 @@
       appAction: function(a){ return { api:'action', uid:a[0], t:a[1], action:a[2], payload:a[3] }; },
       appSetLang: function(a){ return { api:'setlang', uid:a[0], t:a[1], lang:a[2] }; },
       appSetAvatar: function(a){ return { api:'setavatar', uid:a[0], t:a[1], image:a[2] }; },
+      appAdminData: function(a){ return { api:'admindata', uid:a[0], t:a[1] }; },
+      appAdminAddShift: function(a){ return { api:'adminadd', uid:a[0], t:a[1], payload:a[2] }; },
+      appAdminDelShift: function(a){ return { api:'admindel', uid:a[0], t:a[1], key:a[2] }; },
     };
     fetch(API_URL, { method: 'POST', body: JSON.stringify(map[fn](args)) })
       .then(function(r){ return r.json(); })
@@ -356,7 +402,12 @@
       bEnd:'Завершить смену',
       cTitle:'Завершить смену?', cLunch:'Обед будет закрыт автоматически.',
       cYes:'Да, завершить', cNo:'Нет, продолжаю', connErr:'Ошибка соединения',
-      tabHome:'Смена', tabVac:'Отпуск',
+      tabHome:'Смена', tabVac:'Отпуск', tabAdm:'Админ',
+      mySched:'Мои смены', schedToday:'сегодня',
+      admTitle:'Назначить смены', admEmp:'Сотрудник', admFrom:'С', admTo:'По',
+      admStart:'Начало', admEnd:'Конец', admNotePh:'Заметка (необязательно)',
+      admBtn:'Назначить', admList:'Ближайшие назначения (14 дней)',
+      admEmpty:'Назначений пока нет', admPick:'Выберите сотрудника и даты',
     },
     en: {
       hours:'My hours', today:'Today', week:'Week', shifts:'Shifts',
@@ -371,7 +422,12 @@
       bEnd:'End shift',
       cTitle:'End the shift?', cLunch:'Lunch will be closed automatically.',
       cYes:'Yes, end shift', cNo:'No, keep working', connErr:'Connection error',
-      tabHome:'Shift', tabVac:'Vacation',
+      tabHome:'Shift', tabVac:'Vacation', tabAdm:'Admin',
+      mySched:'My shifts', schedToday:'today',
+      admTitle:'Assign shifts', admEmp:'Employee', admFrom:'From', admTo:'To',
+      admStart:'Start', admEnd:'End', admNotePh:'Note (optional)',
+      admBtn:'Assign', admList:'Upcoming assignments (14 days)',
+      admEmpty:'Nothing scheduled yet', admPick:'Pick an employee and dates',
     },
   };
   function d(){ return DICT[LNG] || DICT.ru; }
@@ -404,6 +460,18 @@
     document.getElementById('cNo').textContent = d().cNo;
     document.getElementById('tHome').textContent = d().tabHome;
     document.getElementById('tVac').textContent = d().tabVac;
+    document.getElementById('tAdm').textContent = d().tabAdm;
+    document.getElementById('hSched').textContent = d().mySched;
+    document.getElementById('hAdm').textContent = d().admTitle;
+    document.getElementById('hAdmList').textContent = d().admList;
+    document.getElementById('lAdmEmp').textContent = d().admEmp;
+    document.getElementById('lAdmFrom').textContent = d().admFrom;
+    document.getElementById('lAdmTo').textContent = d().admTo;
+    document.getElementById('lAdmStart').textContent = d().admStart;
+    document.getElementById('lAdmEnd').textContent = d().admEnd;
+    document.getElementById('admNote').placeholder = d().admNotePh;
+    document.getElementById('admBtn').innerHTML =
+      '<span class="lbl" style="text-align:center">' + d().admBtn + '</span>';
     document.getElementById('lru').className = LNG === 'ru' ? 'on' : '';
     document.getElementById('len').className = LNG === 'en' ? 'on' : '';
   }
@@ -412,8 +480,67 @@
     haptic();
     document.getElementById('pgHome').classList.toggle('on', p === 'home');
     document.getElementById('pgVac').classList.toggle('on', p === 'vac');
+    document.getElementById('pgAdm').classList.toggle('on', p === 'adm');
     document.getElementById('tabHome').classList.toggle('on', p === 'home');
     document.getElementById('tabVac').classList.toggle('on', p === 'vac');
+    document.getElementById('tabAdm').classList.toggle('on', p === 'adm');
+    if (p === 'adm' && !ADM) loadAdmin();
+  }
+
+  // --- Админ: график смен ---
+  let ADM = null;
+  function loadAdmin(){
+    syncOn(true);
+    rpc('appAdminData', [UID, TOKEN], function(a){ syncOn(false); renderAdmin(a); },
+      function(e){ syncOn(false); fail(e); });
+  }
+  function renderAdmin(a){
+    ADM = a;
+    const sel = document.getElementById('admEmp');
+    sel.innerHTML = '';
+    (a.employees || []).forEach(function(e2){
+      const o = document.createElement('option');
+      o.value = e2.id; o.textContent = e2.name;
+      sel.appendChild(o);
+    });
+    const list = document.getElementById('admList');
+    list.innerHTML = '';
+    if (!a.list || !a.list.length) {
+      list.innerHTML = '<div class="empty">' + d().admEmpty + '</div>';
+      return;
+    }
+    a.list.forEach(function(s){
+      const r = document.createElement('div');
+      r.className = 'srow';
+      const del = document.createElement('button');
+      del.className = 'del'; del.textContent = '✕';
+      del.onclick = function(){
+        haptic(); syncOn(true);
+        rpc('appAdminDelShift', [UID, TOKEN, s.key],
+          function(a2){ syncOn(false); renderAdmin(a2); },
+          function(e2){ syncOn(false); fail(e2); });
+      };
+      const span = document.createElement('span');
+      span.textContent = s.d + ' · ' + s.name + ' · ' + s.s + '–' + s.e;
+      r.appendChild(span); r.appendChild(del);
+      list.appendChild(r);
+    });
+  }
+  function admAssign(){
+    const empId = document.getElementById('admEmp').value;
+    const from = document.getElementById('admFrom').value;
+    const to = document.getElementById('admTo').value || from;
+    const start = document.getElementById('admStart').value;
+    const end = document.getElementById('admEnd').value;
+    if (!empId || !from || !start || !end) return toast(d().admPick, true);
+    haptic(); busy(true);
+    rpc('appAdminAddShift', [UID, TOKEN, {
+      empId: empId, from: from, to: to, start: start, end: end,
+      note: document.getElementById('admNote').value.trim(),
+    }], function(a){
+      busy(false); renderAdmin(a); toast('✓');
+      document.getElementById('admNote').value = '';
+    }, fail);
   }
 
   function busy(on){ document.getElementById('loadOv').classList.toggle('show', !!on); }
@@ -535,6 +662,30 @@
       document.getElementById('timer').textContent = '–:––';
       setRing(0, '#e4e7ec');
       B('b-green', 'play', d().bStart, 'start_shift');
+    }
+
+    // Вкладка «Админ» — только для role=admin
+    document.getElementById('tabAdm').style.display = st.isAdmin ? 'flex' : 'none';
+
+    // «Мои смены» из «Графика» (ближайшие дни; сегодняшняя подсвечена)
+    const sc = document.getElementById('schedCard');
+    const sl = document.getElementById('schedList');
+    if (st.sched && st.sched.length) {
+      sc.style.display = 'block';
+      sl.innerHTML = '';
+      const todayDs = (function(){
+        const n2 = new Date();
+        return n2.getFullYear() + ('0' + (n2.getMonth() + 1)).slice(-2) + ('0' + n2.getDate()).slice(-2);
+      })();
+      st.sched.forEach(function(s2){
+        const r = document.createElement('div');
+        r.className = 'srow' + (s2.ds === todayDs ? ' today' : '');
+        r.innerHTML = '<span>' + s2.d + (s2.ds === todayDs ? ' · ' + d().schedToday : '') + '</span>' +
+          '<b>' + s2.s + '–' + s2.e + '</b>';
+        sl.appendChild(r);
+      });
+    } else {
+      sc.style.display = 'none';
     }
 
     // Аватар: пришедший / из локального кэша / инициалы
