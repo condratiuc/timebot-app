@@ -2,6 +2,10 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<!-- Обязателен для мобильной вёрстки: на GitHub Pages его никто не вставит за нас
+     (на GAS это делал addMetaTag; дубль безвреден) -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Учёт времени</title>
 <!-- URL страницы содержит подписанный токен — не отдаём его в Referer внешним хостам -->
 <meta name="referrer" content="no-referrer">
 <!-- SRI намеренно отсутствует: Telegram обновляет этот скрипт на месте (evergreen),
