@@ -151,6 +151,12 @@
   .srow{display:flex;align-items:center;background:#f8fafc;border-radius:13px;
     padding:10px 12px;font-size:13px;font-weight:600;justify-content:space-between}
   .srow.today{background:#e0e7ff}
+  .tsec{margin:12px 0 6px;font-size:11px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.4px;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .tsec:first-child{margin-top:0}
+  .tdot{width:8px;height:8px;border-radius:50%;flex:none}
+  .trows{display:flex;flex-direction:column;gap:6px}
+  .srow.warn{background:#fef0c7}
   .vlist{display:flex;flex-direction:column;gap:8px}
   .vrow{display:flex;justify-content:space-between;align-items:center;background:#f8fafc;
     border-radius:13px;padding:11px 13px;font-size:13px;font-weight:600}
@@ -284,8 +290,13 @@
       </div>
     </section>
 
-    <!-- Страница «Админ»: график смен (видна только role=admin) -->
+    <!-- Страница «Админ»: live-статус команды + график смен (только role=admin) -->
     <section class="page" id="pgAdm">
+      <div class="card">
+        <h3><svg class="ic"><use href="#i-chart"/></svg><span id="hTeam"></span></h3>
+        <div id="teamBox"></div>
+      </div>
+
       <div class="card">
         <h3><svg class="ic"><use href="#i-cal"/></svg><span id="hAdm"></span></h3>
         <label class="flbl" id="lAdmEmp"></label>
@@ -408,6 +419,9 @@
       admStart:'Начало', admEnd:'Конец', admNotePh:'Заметка (необязательно)',
       admBtn:'Назначить', admList:'Ближайшие назначения (14 дней)',
       admEmpty:'Назначений пока нет', admPick:'Выберите сотрудника и даты',
+      teamNow:'Команда сейчас', tOnShift:'На смене', tOnLunch:'На обеде',
+      tOnVac:'В отпуске', tAwaited:'Ждём сегодня', tSince:'с ', tUntil:'до ',
+      tNobody:'Сейчас никто не работает',
     },
     en: {
       hours:'My hours', today:'Today', week:'Week', shifts:'Shifts',
@@ -428,6 +442,9 @@
       admStart:'Start', admEnd:'End', admNotePh:'Note (optional)',
       admBtn:'Assign', admList:'Upcoming assignments (14 days)',
       admEmpty:'Nothing scheduled yet', admPick:'Pick an employee and dates',
+      teamNow:'Team right now', tOnShift:'On shift', tOnLunch:'On lunch',
+      tOnVac:'On vacation', tAwaited:'Expected today', tSince:'since ', tUntil:'until ',
+      tNobody:'Nobody is working right now',
     },
   };
   function d(){ return DICT[LNG] || DICT.ru; }
@@ -484,7 +501,7 @@
     document.getElementById('tabHome').classList.toggle('on', p === 'home');
     document.getElementById('tabVac').classList.toggle('on', p === 'vac');
     document.getElementById('tabAdm').classList.toggle('on', p === 'adm');
-    if (p === 'adm' && !ADM) loadAdmin();
+    if (p === 'adm') loadAdmin(); // каждый заход — свежий статус команды
   }
 
   // --- Админ: график смен ---
@@ -496,6 +513,44 @@
   }
   function renderAdmin(a){
     ADM = a;
+
+    // «Команда сейчас» — все строки только через textContent (данные из таблицы)
+    document.getElementById('hTeam').textContent = d().teamNow;
+    const tb = document.getElementById('teamBox');
+    tb.innerHTML = '';
+    const section = function(label, color, rows, mk, warn){
+      if (!rows || !rows.length) return;
+      const h = document.createElement('div');
+      h.className = 'tsec';
+      const dot = document.createElement('span');
+      dot.className = 'tdot'; dot.style.background = color;
+      const tx2 = document.createElement('span');
+      tx2.textContent = label + ' · ' + rows.length;
+      h.appendChild(dot); h.appendChild(tx2);
+      tb.appendChild(h);
+      const box = document.createElement('div');
+      box.className = 'trows';
+      rows.forEach(function(x){
+        const r = document.createElement('div');
+        r.className = 'srow' + (warn ? ' warn' : '');
+        const l2 = document.createElement('span'); l2.textContent = x.name;
+        const r2 = document.createElement('b'); r2.textContent = mk(x);
+        r.appendChild(l2); r.appendChild(r2);
+        box.appendChild(r);
+      });
+      tb.appendChild(box);
+    };
+    const tm = a.team || {};
+    section(d().tOnShift, '#12b76a', tm.onShift, function(x){ return d().tSince + x.since; });
+    section(d().tOnLunch, '#f79009', tm.onLunch, function(x){ return d().tSince + x.since; });
+    section(d().tOnVac, '#6366f1', tm.onVacation, function(x){ return d().tUntil + x.until; });
+    section(d().tAwaited, '#b54708', tm.awaited, function(x){ return x.plan; }, true);
+    if (!tb.childNodes.length) {
+      const e2 = document.createElement('div');
+      e2.className = 'empty'; e2.textContent = d().tNobody;
+      tb.appendChild(e2);
+    }
+
     const sel = document.getElementById('admEmp');
     sel.innerHTML = '';
     (a.employees || []).forEach(function(e2){
