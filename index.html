@@ -271,6 +271,21 @@
       </div>
 
       <div class="card">
+        <button class="btn b-ghost" id="extraToggle" onclick="toggleExtra()" style="margin-top:0"></button>
+        <div id="extraForm" style="display:none">
+          <label style="display:block;margin-top:10px"><span class="flbl" id="lExDate"></span>
+            <input class="fld" type="date" id="exDate"></label>
+          <div class="frow" style="margin-top:6px">
+            <label><span class="flbl" id="lExStart"></span><input class="fld" type="time" id="exStart" value="09:00"></label>
+            <label><span class="flbl" id="lExEnd"></span><input class="fld" type="time" id="exEnd" value="18:00"></label>
+          </div>
+          <input class="fld" type="text" id="exNote" maxlength="200">
+          <button class="btn b-blue" id="exBtn" onclick="sendExtra()"></button>
+        </div>
+        <div class="vlist" id="exMine" style="margin-top:10px"></div>
+      </div>
+
+      <div class="card">
         <h3><svg class="ic"><use href="#i-chart"/></svg><span id="hHours"></span></h3>
         <div class="stats">
           <div class="stat s1"><div class="sic"><svg class="ic"><use href="#i-sun"/></svg></div>
@@ -400,6 +415,8 @@
       appAdminDelShift: function(a){ return { api:'admindel', uid:a[0], t:a[1], key:a[2] }; },
       appAdminDecide: function(a){ return { api:'admindecide', uid:a[0], t:a[1], reqId:a[2], approve:a[3]?1:0, comment:a[4]||'' }; },
       appAdminRegDecide: function(a){ return { api:'adminreg', uid:a[0], t:a[1], empId:a[2], approve:a[3]?1:0 }; },
+      appExtraRequest: function(a){ return { api:'extrareq', uid:a[0], t:a[1], payload:a[2] }; },
+      appAdminExtraDecide: function(a){ return { api:'adminextra', uid:a[0], t:a[1], reqId:a[2], approve:a[3]?1:0 }; },
     };
     fetch(API_URL, { method: 'POST', body: JSON.stringify(map[fn](args)) })
       .then(function(r){ return r.json(); })
@@ -445,6 +462,9 @@
       tOnVac:'В отпуске', tAwaited:'Ждём сегодня', tSince:'с ', tUntil:'до ',
       tNobody:'Сейчас никто не работает',
       needsH:'Требуют решения', admPendingH:'Заявки на отпуск', admRegsH:'Заявки на регистрацию',
+      admExtraH:'Доп. смены', exToggle:'➕ Запросить доп. смену', exDate:'Дата',
+      exStart:'Начало', exEnd:'Конец', exNotePh:'Комментарий (необязательно)',
+      exSend:'Отправить запрос', exWait:'Ожидает решения: ',
       okBtn:'✓ Одобрить', noBtn:'✕ Отклонить',
       admCommentPh:'Комментарий (увидит сотрудник)', daysShort:' дн.',
     },
@@ -471,6 +491,9 @@
       tOnVac:'On vacation', tAwaited:'Expected today', tSince:'since ', tUntil:'until ',
       tNobody:'Nobody is working right now',
       needsH:'Needs your decision', admPendingH:'Vacation requests', admRegsH:'Registration requests',
+      admExtraH:'Extra shifts', exToggle:'➕ Request an extra shift', exDate:'Date',
+      exStart:'Start', exEnd:'End', exNotePh:'Comment (optional)',
+      exSend:'Send request', exWait:'Pending: ',
       okBtn:'✓ Approve', noBtn:'✕ Decline',
       admCommentPh:'Comment (employee will see it)', daysShort:' d.',
     },
@@ -515,6 +538,13 @@
     document.getElementById('lAdmStart').textContent = d().admStart;
     document.getElementById('lAdmEnd').textContent = d().admEnd;
     document.getElementById('admNote').placeholder = d().admNotePh;
+    document.getElementById('extraToggle').textContent = d().exToggle;
+    document.getElementById('lExDate').textContent = d().exDate;
+    document.getElementById('lExStart').textContent = d().exStart;
+    document.getElementById('lExEnd').textContent = d().exEnd;
+    document.getElementById('exNote').placeholder = d().exNotePh;
+    document.getElementById('exBtn').innerHTML =
+      '<span class="lbl" style="text-align:center">' + d().exSend + '</span>';
     document.getElementById('admBtn').innerHTML =
       '<span class="lbl" style="text-align:center">' + d().admBtn + '</span>';
     document.getElementById('lru').className = LNG === 'ru' ? 'on' : '';
@@ -618,6 +648,33 @@
           };
         };
         c.appendChild(decideBtns(vacGo(true), vacGo(false)));
+        ab.appendChild(c);
+      });
+    }
+    if (a.extras && a.extras.length) {
+      sec(d().admExtraH + ' · ' + a.extras.length);
+      a.extras.forEach(function(q){
+        const c = document.createElement('div');
+        c.className = 'vcard';
+        const vt = document.createElement('div');
+        vt.className = 'vt'; vt.textContent = q.reqId + ' · ' + q.name;
+        const vp = document.createElement('div');
+        vp.className = 'vp'; vp.textContent = q.d + ' · ' + q.s + '–' + q.e;
+        c.appendChild(vt); c.appendChild(vp);
+        if (q.note) {
+          const vr = document.createElement('div');
+          vr.className = 'vr'; vr.textContent = q.note;
+          c.appendChild(vr);
+        }
+        const exGo = function(approve){
+          return function(){
+            haptic(); syncOn(true);
+            rpc('appAdminExtraDecide', [UID, TOKEN, q.reqId, approve], function(a2){
+              syncOn(false); renderAdmin(a2); toast('✓'); load(true);
+            }, function(e2){ syncOn(false); fail(e2); });
+          };
+        };
+        c.appendChild(decideBtns(exGo(true), exGo(false)));
         ab.appendChild(c);
       });
     }
@@ -863,6 +920,18 @@
       sc.style.display = 'none';
     }
 
+    // Мои запросы на доп. смены в ожидании
+    const em = document.getElementById('exMine');
+    em.innerHTML = '';
+    (st.myExtras || []).forEach(function(x){
+      const r = document.createElement('div');
+      r.className = 'srow';
+      const l3 = document.createElement('span'); l3.textContent = d().exWait + x.d;
+      const r3 = document.createElement('b'); r3.textContent = x.s + '–' + x.e;
+      r.appendChild(l3); r.appendChild(r3);
+      em.appendChild(r);
+    });
+
     // Аватар: пришедший / из локального кэша / инициалы
     const ava = document.getElementById('ava');
     let avaSrc = st.avatar;
@@ -949,6 +1018,30 @@
   d2.onchange = countDays;
   const today = new Date().toISOString().slice(0, 10);
   d1.min = today; d2.min = today;
+  document.getElementById('exDate').min = today;
+
+  function toggleExtra(){
+    haptic();
+    const f = document.getElementById('extraForm');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  }
+  function sendExtra(){
+    const dt = document.getElementById('exDate').value;
+    const s = document.getElementById('exStart').value;
+    const e2 = document.getElementById('exEnd').value;
+    if (!dt || !s || !e2) return toast(d().admPick, true);
+    haptic(); busy(true);
+    rpc('appExtraRequest', [UID, TOKEN, {
+      date: dt, start: s, end: e2,
+      note: document.getElementById('exNote').value.trim(),
+    }], function(st){
+      render(st);
+      if (st.notice) toast(st.notice);
+      document.getElementById('exNote').value = '';
+      document.getElementById('exDate').value = '';
+      document.getElementById('extraForm').style.display = 'none';
+    }, fail);
+  }
 
   function sendVacation(){
     if (!d1.value || !d2.value) return toast(d().pickDates, true);
