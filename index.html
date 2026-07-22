@@ -346,13 +346,9 @@
       </div>
     </section>
 
-    <!-- Страница «Админ»: согласования + live-статус команды + график смен -->
+    <!-- Страница «Админ»: только информация и график.
+         Согласования (accept/decline) живут во вкладке «Лента». -->
     <section class="page" id="pgAdm">
-      <div class="card" id="apprCard" style="display:none">
-        <h3><svg class="ic"><use href="#i-plane"/></svg><span id="hAppr"></span></h3>
-        <div id="apprBox"></div>
-      </div>
-
       <div class="card">
         <h3><svg class="ic"><use href="#i-chart"/></svg><span id="hTeam"></span></h3>
         <div id="teamBox"></div>
@@ -400,7 +396,6 @@
     </button>
     <button class="tab" id="tabAdm" onclick="showPage('adm')" style="display:none">
       <svg class="ic"><use href="#i-cal"/></svg><span id="tAdm"></span>
-      <span class="tbadge" id="admBadge"></span>
     </button>
   </nav>
   <input type="file" id="avaFile" accept="image/*" style="display:none">
@@ -679,114 +674,6 @@
   function renderAdmin(a){
     ADM = a;
 
-    // --- «Требуют решения»: регистрации и отпуска (данные — только textContent) ---
-    document.getElementById('hAppr').textContent = d().needsH;
-    const ab = document.getElementById('apprBox');
-    ab.innerHTML = '';
-    const decideBtns = function(onOk, onNo){
-      const row = document.createElement('div');
-      row.className = 'frow';
-      row.style.marginTop = '9px';
-      const ok = document.createElement('button');
-      ok.className = 'btn2 ok'; ok.textContent = d().okBtn; ok.onclick = onOk;
-      const no = document.createElement('button');
-      no.className = 'btn2 no'; no.textContent = d().noBtn; no.onclick = onNo;
-      row.appendChild(ok); row.appendChild(no);
-      return row;
-    };
-    const sec = function(label){
-      const h = document.createElement('div');
-      h.className = 'tsec'; h.textContent = label;
-      ab.appendChild(h);
-    };
-    if (a.regs && a.regs.length) {
-      sec(d().admRegsH + ' · ' + a.regs.length);
-      a.regs.forEach(function(g){
-        const c = document.createElement('div');
-        c.className = 'vcard';
-        const vt = document.createElement('div');
-        vt.className = 'vt'; vt.textContent = g.name;
-        const vp = document.createElement('div');
-        vp.className = 'vr';
-        vp.textContent = g.branch + (g.username ? ' · @' + g.username : '');
-        c.appendChild(vt); c.appendChild(vp);
-        const regGo = function(approve){
-          return function(){
-            haptic(); syncOn(true);
-            rpc('appAdminRegDecide', [UID, TOKEN, g.id, approve], function(a2){
-              syncOn(false); renderAdmin(a2); toast('✓'); load(true);
-            }, function(e2){ syncOn(false); fail(e2); });
-          };
-        };
-        c.appendChild(decideBtns(regGo(true), regGo(false)));
-        ab.appendChild(c);
-      });
-    }
-    if (a.pending && a.pending.length) {
-      sec(d().admPendingH + ' · ' + a.pending.length);
-      a.pending.forEach(function(q){
-        const c = document.createElement('div');
-        c.className = 'vcard';
-        const vt = document.createElement('div');
-        vt.className = 'vt'; vt.textContent = q.reqId + ' · ' + q.name;
-        const vp = document.createElement('div');
-        vp.className = 'vp'; vp.textContent = q.type + ' · ' + q.period + ' (' + q.days + d().daysShort + ')';
-        c.appendChild(vt); c.appendChild(vp);
-        if (q.reason) {
-          const vr = document.createElement('div');
-          vr.className = 'vr'; vr.textContent = q.reason;
-          c.appendChild(vr);
-        }
-        if (q.warn) {
-          const vw = document.createElement('div');
-          vw.className = 'vw'; vw.textContent = q.warn;
-          c.appendChild(vw);
-        }
-        const cm = document.createElement('input');
-        cm.className = 'fld'; cm.type = 'text'; cm.maxLength = 300;
-        cm.placeholder = d().admCommentPh;
-        c.appendChild(cm);
-        const vacGo = function(approve){
-          return function(){
-            haptic(); syncOn(true);
-            rpc('appAdminDecide', [UID, TOKEN, q.reqId, approve, cm.value.trim()], function(a2){
-              syncOn(false); renderAdmin(a2); toast('✓'); load(true);
-            }, function(e2){ syncOn(false); fail(e2); });
-          };
-        };
-        c.appendChild(decideBtns(vacGo(true), vacGo(false)));
-        ab.appendChild(c);
-      });
-    }
-    if (a.extras && a.extras.length) {
-      sec(d().admExtraH + ' · ' + a.extras.length);
-      a.extras.forEach(function(q){
-        const c = document.createElement('div');
-        c.className = 'vcard';
-        const vt = document.createElement('div');
-        vt.className = 'vt'; vt.textContent = q.reqId + ' · ' + q.name;
-        const vp = document.createElement('div');
-        vp.className = 'vp'; vp.textContent = q.d + ' · ' + q.s + '–' + q.e;
-        c.appendChild(vt); c.appendChild(vp);
-        if (q.note) {
-          const vr = document.createElement('div');
-          vr.className = 'vr'; vr.textContent = q.note;
-          c.appendChild(vr);
-        }
-        const exGo = function(approve){
-          return function(){
-            haptic(); syncOn(true);
-            rpc('appAdminExtraDecide', [UID, TOKEN, q.reqId, approve], function(a2){
-              syncOn(false); renderAdmin(a2); toast('✓'); load(true);
-            }, function(e2){ syncOn(false); fail(e2); });
-          };
-        };
-        c.appendChild(decideBtns(exGo(true), exGo(false)));
-        ab.appendChild(c);
-      });
-    }
-    document.getElementById('apprCard').style.display = ab.childNodes.length ? 'block' : 'none';
-
     // «Команда сейчас»: сетка коробочек 2×2, тап раскрывает список людей.
     // Все строки — только textContent (данные из таблицы).
     document.getElementById('hTeam').textContent = d().teamNow;
@@ -1037,13 +924,6 @@
 
     // Вкладка «Админ» — только для role=admin; бейдж = ожидающие решения
     document.getElementById('tabAdm').style.display = st.isAdmin ? 'flex' : 'none';
-    const bdg = document.getElementById('admBadge');
-    if (st.isAdmin && st.adminBadge) {
-      bdg.textContent = st.adminBadge;
-      bdg.style.display = 'flex';
-    } else {
-      bdg.style.display = 'none';
-    }
     const nb = document.getElementById('ntfBadge');
     if (st.unreadNotifs) {
       nb.textContent = st.unreadNotifs;
