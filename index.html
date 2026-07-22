@@ -369,7 +369,20 @@
             <label><span class="flbl" id="lAdmEnd"></span><input class="fld" type="time" id="admEnd" value="18:00"></label>
           </div>
           <input class="fld" type="text" id="admNote" maxlength="200">
+          <label style="display:flex;align-items:center;gap:8px;margin-top:11px;font-size:13.5px;font-weight:700;cursor:pointer">
+            <input type="checkbox" id="admExtraChk" style="width:18px;height:18px;accent-color:#4f46e5">
+            <span id="lAdmExtra"></span>
+          </label>
           <button class="btn b-blue" id="admBtn" onclick="admAssign()"></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-bottom:0"><svg class="ic"><use href="#i-bell"/></svg><span id="hAnn"></span>
+          <button class="plusbtn" id="annPlus" onclick="toggleBox('annBox','annPlus')">+</button></h3>
+        <div id="annBox" style="display:none">
+          <textarea id="annText" maxlength="1500" style="margin-top:12px;height:84px"></textarea>
+          <button class="btn b-blue" id="annBtn" onclick="sendAnn()"></button>
         </div>
       </div>
       <div class="card">
@@ -450,6 +463,7 @@
       appExtraRequest: function(a){ return { api:'extrareq', uid:a[0], t:a[1], payload:a[2] }; },
       appAdminExtraDecide: function(a){ return { api:'adminextra', uid:a[0], t:a[1], reqId:a[2], approve:a[3]?1:0 }; },
       appNotifs: function(a){ return { api:'notifs', uid:a[0], t:a[1] }; },
+      appAdminAnnounce: function(a){ return { api:'announce', uid:a[0], t:a[1], text:a[2] }; },
     };
     fetch(API_URL, { method: 'POST', body: JSON.stringify(map[fn](args)) })
       .then(function(r){ return r.json(); })
@@ -491,6 +505,9 @@
       admStart:'Начало', admEnd:'Конец', admNotePh:'Заметка (необязательно)',
       admBtn:'Назначить', admList:'Ближайшие назначения (14 дней)',
       admEmpty:'Назначений пока нет', admPick:'Выберите сотрудника и даты',
+      admExtra:'Это дополнительная смена', annH:'Объявление всем',
+      annPh:'Текст объявления — придёт каждому в чат и в ленту',
+      annSend:'Отправить всем',
       teamNow:'Команда сейчас', tOnShift:'На смене', tOnLunch:'На обеде',
       tOnVac:'В отпуске', tOnSick:'На больничном', tAwaited:'Ждём сегодня',
       tSince:'с ', tUntil:'до ', tNobody:'Сейчас никто не работает',
@@ -521,6 +538,9 @@
       admStart:'Start', admEnd:'End', admNotePh:'Note (optional)',
       admBtn:'Assign', admList:'Upcoming assignments (14 days)',
       admEmpty:'Nothing scheduled yet', admPick:'Pick an employee and dates',
+      admExtra:'This is an extra shift', annH:'Announcement to everyone',
+      annPh:'Message text — delivered to every chat and feed',
+      annSend:'Send to everyone',
       teamNow:'Team right now', tOnShift:'On shift', tOnLunch:'On lunch',
       tOnVac:'On vacation', tOnSick:'On sick leave', tAwaited:'Expected today',
       tSince:'since ', tUntil:'until ', tNobody:'Nobody is working right now',
@@ -573,6 +593,11 @@
     document.getElementById('lAdmStart').textContent = d().admStart;
     document.getElementById('lAdmEnd').textContent = d().admEnd;
     document.getElementById('admNote').placeholder = d().admNotePh;
+    document.getElementById('lAdmExtra').textContent = d().admExtra;
+    document.getElementById('hAnn').textContent = d().annH;
+    document.getElementById('annText').placeholder = d().annPh;
+    document.getElementById('annBtn').innerHTML =
+      '<span class="lbl" style="text-align:center">' + d().annSend + '</span>';
     document.getElementById('hExtra').textContent = d().exH;
     document.getElementById('tNtf').textContent = d().tabNtf;
     document.getElementById('hNtf').textContent = d().ntfH;
@@ -795,9 +820,24 @@
     rpc('appAdminAddShift', [UID, TOKEN, {
       empId: empId, from: from, to: to, start: start, end: end,
       note: document.getElementById('admNote').value.trim(),
+      extra: document.getElementById('admExtraChk').checked ? 1 : 0,
     }], function(a){
       busy(false); renderAdmin(a); toast('✓');
       document.getElementById('admNote').value = '';
+      document.getElementById('admExtraChk').checked = false;
+    }, fail);
+  }
+
+  function sendAnn(){
+    const text = document.getElementById('annText').value.trim();
+    if (!text) return toast(d().annPh, true);
+    haptic(); busy(true);
+    rpc('appAdminAnnounce', [UID, TOKEN, text], function(st){
+      render(st);
+      if (st.notice) toast(st.notice);
+      document.getElementById('annText').value = '';
+      document.getElementById('annBox').style.display = 'none';
+      document.getElementById('annPlus').textContent = '+';
     }, fail);
   }
 
@@ -947,7 +987,8 @@
         const r = document.createElement('div');
         r.className = 'srow' + (s2.ds === todayDs ? ' today' : '');
         const left = document.createElement('span');
-        left.textContent = s2.d + (s2.ds === todayDs ? ' · ' + d().schedToday : '');
+        left.textContent = (s2.ex ? '➕ ' : '') + s2.d +
+          (s2.ds === todayDs ? ' · ' + d().schedToday : '');
         const right = document.createElement('b');
         right.textContent = s2.s + '–' + s2.e;
         r.appendChild(left); r.appendChild(right);
