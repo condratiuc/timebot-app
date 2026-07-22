@@ -10,7 +10,7 @@
 <meta name="referrer" content="no-referrer">
 <!-- SRI намеренно отсутствует: Telegram обновляет этот скрипт на месте (evergreen),
      integrity-хэш сломал бы приложение при обновлении; все вызовы Telegram.* в try/catch -->
-<script src="https://telegram.org/js/telegram-web-app.js" referrerpolicy="no-referrer"></script>
+<script src="https://telegram.org/js/telegram-web-app.js" referrerpolicy="no-referrer" defer></script>
 <style>
   :root{
     --bg:#eef1f7; --card:#ffffff; --text:#101828; --muted:#667085;
@@ -105,6 +105,11 @@
     transform-origin:left;transition:opacity .2s}
   .sync.on{opacity:1;animation:syncbar 1.1s ease-in-out infinite}
   @keyframes syncbar{0%{transform:scaleX(0)}60%{transform:scaleX(.85)}100%{transform:scaleX(1);opacity:.4}}
+  /* Скелетон холодного старта (без кэша): пульс на имени/кольце/статусе
+     вместо блокирующего оверлея; снимается первым render() */
+  body.booting #name,body.booting .ringBox,body.booting #pill{
+    animation:skel 1.15s ease-in-out infinite}
+  @keyframes skel{0%,100%{opacity:.35}50%{opacity:.85}}
 
   /* Статы */
   .stats{display:flex;gap:10px}
@@ -162,6 +167,10 @@
     color:#475467;margin-top:5px}
   .plusbtn{margin-left:auto;width:28px;height:28px;border-radius:9px;border:0;flex:none;
     background:#eef2ff;color:#4338ca;font-size:17px;font-weight:800;cursor:pointer;line-height:1}
+  .clearbtn{margin-left:auto;border:0;flex:none;background:#eef2ff;color:#4338ca;
+    font-size:11.5px;font-weight:800;border-radius:9px;padding:7px 10px;cursor:pointer;
+    line-height:1;transition:transform .08s}
+  .clearbtn:active{transform:scale(.95)}
   .tsec{margin:12px 0 6px;font-size:11px;font-weight:800;text-transform:uppercase;
     letter-spacing:.4px;color:var(--muted);display:flex;align-items:center;gap:7px}
   .tsec:first-child{margin-top:0}
@@ -320,7 +329,8 @@
     <!-- Страница «Отпуск» -->
     <section class="page" id="pgVac">
       <div class="card">
-        <img class="vacArt" id="vacArtImg" src="data:image/webp;base64,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" alt="">
+        <!-- src ставится из JS (IMGS.vacArts[0]) — иллюстрация вшита в сборку один раз -->
+        <img class="vacArt" id="vacArtImg" alt="">
         <h3><svg class="ic"><use href="#i-plane"/></svg><span id="hVac"></span></h3>
         <div class="chips" id="types"></div>
         <div class="dates">
@@ -341,7 +351,8 @@
     <!-- Страница «Лента»: уведомления сотрудника -->
     <section class="page" id="pgNtf">
       <div class="card">
-        <h3><svg class="ic"><use href="#i-bell"/></svg><span id="hNtf"></span></h3>
+        <h3><svg class="ic"><use href="#i-bell"/></svg><span id="hNtf"></span>
+          <button class="clearbtn" id="ntfClearBtn" onclick="clearFeed()"></button></h3>
         <div class="vlist" id="ntfList"></div>
       </div>
     </section>
@@ -417,7 +428,7 @@
   <div class="overlay" id="confirmOv">
     <div class="modal">
       <p><b id="cTitle"></b><br><span class="tsub" id="confirmSub"></span></p>
-      <button class="btn simple b-red" id="cYes" onclick="doAction('end_shift');hideConfirm()"></button>
+      <button class="btn simple b-red" id="cYes" onclick="confirmOk()"></button>
       <button class="btn simple b-ghost" id="cNo" onclick="hideConfirm()"></button>
     </div>
   </div>
@@ -444,7 +455,12 @@
   /**
    * Единый RPC: внутри GAS — google.script.run; на внешнем хостинге — fetch
    * к JSON-API (тело text/plain строкой — simple request, без preflight).
+   * Таймаут 12 с; ОДИН автоповтор — только для читающих api (сетевая ошибка/
+   * таймаут). Мутации не повторяем никогда: риск двойного clock-in, у них
+   * останется обычный err-путь (doAction сам откатывает optimistic-переход).
    */
+  const RETRY_FNS = { appState: 1, appNotifs: 1, appAdminData: 1, appAvatar: 1 };
+  const RPC_TIMEOUT_MS = 12000;
   function rpc(fn, args, ok, err){
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       const r = google.script.run.withSuccessHandler(ok).withFailureHandler(err);
@@ -467,14 +483,28 @@
       appAdminAnnounce: function(a){ return { api:'announce', uid:a[0], t:a[1], text:a[2] }; },
       appEmpExtraRespond: function(a){ return { api:'exrespond', uid:a[0], t:a[1], batchId:a[2], accept:a[3]?1:0 }; },
       appAnnAck: function(a){ return { api:'annack', uid:a[0], t:a[1], annId:a[2] }; },
+      appFeedClear: function(a){ return { api:'feedclear', uid:a[0], t:a[1] }; },
+      appAvatar: function(a){ return { api:'avatar', uid:a[0], t:a[1] }; },
     };
-    fetch(API_URL, { method: 'POST', body: JSON.stringify(map[fn](args)) })
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if (j && j.ok === false) err(new Error(j.error || 'Error'));
-        else ok(j);
-      })
-      .catch(function(e2){ err(e2); });
+    const body = JSON.stringify(map[fn](args)); // считаем один раз — повтор шлёт то же тело
+    const attempt = function(retriesLeft){
+      const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const tmr = ctl ? setTimeout(function(){ ctl.abort(); }, RPC_TIMEOUT_MS) : 0;
+      fetch(API_URL, { method: 'POST', body: body, signal: ctl ? ctl.signal : undefined })
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (tmr) clearTimeout(tmr);
+          // Ответ сервера пришёл (в т.ч. «unknown api» старой версии) — не повторяем
+          if (j && j.ok === false) err(new Error(j.error || 'Error'));
+          else ok(j);
+        })
+        .catch(function(e2){
+          if (tmr) clearTimeout(tmr);
+          if (retriesLeft > 0 && RETRY_FNS[fn]) return attempt(retriesLeft - 1);
+          err(e2 && e2.name === 'AbortError' ? new Error(d().connErr) : e2);
+        });
+    };
+    attempt(1);
   }
 
   // Сгенерированные изображения (data-URI подставляет сборка build-app.js)
@@ -522,6 +552,9 @@
       exSend:'Отправить запрос', exWait:'Ожидает решения: ',
       okBtn:'✓ Одобрить', noBtn:'✕ Отклонить',
       admCommentPh:'Комментарий (увидит сотрудник)', daysShort:' дн.',
+      ntfClear:'Очистить',
+      ntfClearQ:'Скрыть все уведомления? Запросы, ожидающие решения, останутся.',
+      ntfCleared:'Лента очищена', cCancel:'Отмена',
     },
     en: {
       hours:'My hours', today:'Today', week:'Week', shifts:'Shifts',
@@ -556,11 +589,18 @@
       exSend:'Send request', exWait:'Pending: ',
       okBtn:'✓ Approve', noBtn:'✕ Decline',
       admCommentPh:'Comment (employee will see it)', daysShort:' d.',
+      ntfClear:'Clear',
+      ntfClearQ:'Hide all notifications? Items awaiting your decision will remain.',
+      ntfCleared:'Feed cleared', cCancel:'Cancel',
     },
   };
   function d(){ return DICT[LNG] || DICT.ru; }
 
-  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (e) {}
+  // telegram-web-app.js подключён с defer — обращаемся к Telegram.WebApp только
+  // после полной загрузки; try/catch сохраняет работу в обычном браузере.
+  window.addEventListener('load', function(){
+    try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (e) {}
+  });
 
   function icon(id){
     return '<svg class="ic"><use href="#' + id + '"/></svg>';
@@ -583,9 +623,8 @@
       '<span class="bic"><img src="' + IMGS.plane + '" alt=""></span>' +
       '<span class="lbl">' + d().submit + '</span>' +
       '<svg class="ic chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
-    document.getElementById('cTitle').textContent = d().cTitle;
-    document.getElementById('cYes').textContent = d().cYes;
-    document.getElementById('cNo').textContent = d().cNo;
+    // Тексты confirm-модала задаёт showConfirm() при каждом открытии (модал общий)
+    document.getElementById('ntfClearBtn').textContent = '🧹 ' + d().ntfClear;
     document.getElementById('tHome').textContent = d().tabHome;
     document.getElementById('tVac').textContent = d().tabVac;
     document.getElementById('tAdm').textContent = d().tabAdm;
@@ -630,58 +669,94 @@
   }
 
   // --- Лента уведомлений ---
+  // Общий рендер ленты: ответы notifs, feedclear и поле feed decision-RPC
+  // имеют одну форму {items, act}. Только textContent (данные из таблицы).
+  function renderFeed(res){
+    const list = document.getElementById('ntfList');
+    list.innerHTML = '';
+    if (!res || !res.items || !res.items.length) {
+      const e2 = document.createElement('div');
+      e2.className = 'empty'; e2.textContent = d().ntfEmpty;
+      list.appendChild(e2);
+    } else {
+      res.items.forEach(function(x){
+        const r = document.createElement('div');
+        r.className = 'nrow';
+        const ic2 = document.createElement('div');
+        ic2.className = 'nico'; ic2.textContent = x.icon;
+        const bx = document.createElement('div'); bx.className = 'ntx';
+        const tx3 = document.createElement('div'); tx3.textContent = x.text;
+        const tm3 = document.createElement('div');
+        tm3.className = 'ntm'; tm3.textContent = x.ts;
+        bx.appendChild(tx3); bx.appendChild(tm3);
+        // Действие ещё актуально → кнопки прямо в записи ленты
+        if (x.action && res.act && res.act[x.action]) {
+          const acts = document.createElement('div');
+          acts.className = 'frow';
+          acts.style.marginTop = '8px';
+          const mkB = function(cls, label, approve){
+            const b = document.createElement('button');
+            b.className = 'btn2 ' + cls; b.style.padding = '9px';
+            b.textContent = label;
+            b.onclick = function(){ ntfAct(x.action, approve); };
+            acts.appendChild(b);
+          };
+          if (x.action.indexOf('annack:') === 0) {
+            mkB('ok', d().ackBtn, true); // одна кнопка «Ознакомлен»
+          } else if (x.action.indexOf('exask:') === 0) {
+            mkB('ok', d().exYes, true);
+            mkB('no', d().exNo, false);
+          } else {
+            mkB('ok', d().okBtn, true);
+            mkB('no', d().noBtn, false);
+          }
+          bx.appendChild(acts);
+        }
+        r.appendChild(ic2); r.appendChild(bx);
+        list.appendChild(r);
+      });
+    }
+    // лента на экране — непрочитанных больше нет
+    if (S) { S.unreadNotifs = 0; cacheSave(S); }
+    document.getElementById('ntfBadge').style.display = 'none';
+  }
   function loadNotifs(){
     syncOn(true);
     rpc('appNotifs', [UID, TOKEN], function(res){
       syncOn(false);
-      const list = document.getElementById('ntfList');
-      list.innerHTML = '';
-      if (!res.items || !res.items.length) {
-        const e2 = document.createElement('div');
-        e2.className = 'empty'; e2.textContent = d().ntfEmpty;
-        list.appendChild(e2);
-      } else {
-        res.items.forEach(function(x){
-          const r = document.createElement('div');
-          r.className = 'nrow';
-          const ic2 = document.createElement('div');
-          ic2.className = 'nico'; ic2.textContent = x.icon;
-          const bx = document.createElement('div'); bx.className = 'ntx';
-          const tx3 = document.createElement('div'); tx3.textContent = x.text;
-          const tm3 = document.createElement('div');
-          tm3.className = 'ntm'; tm3.textContent = x.ts;
-          bx.appendChild(tx3); bx.appendChild(tm3);
-          // Действие ещё актуально → кнопки прямо в записи ленты
-          if (x.action && res.act && res.act[x.action]) {
-            const acts = document.createElement('div');
-            acts.className = 'frow';
-            acts.style.marginTop = '8px';
-            const mkB = function(cls, label, approve){
-              const b = document.createElement('button');
-              b.className = 'btn2 ' + cls; b.style.padding = '9px';
-              b.textContent = label;
-              b.onclick = function(){ ntfAct(x.action, approve); };
-              acts.appendChild(b);
-            };
-            if (x.action.indexOf('annack:') === 0) {
-              mkB('ok', d().ackBtn, true); // одна кнопка «Ознакомлен»
-            } else if (x.action.indexOf('exask:') === 0) {
-              mkB('ok', d().exYes, true);
-              mkB('no', d().exNo, false);
-            } else {
-              mkB('ok', d().okBtn, true);
-              mkB('no', d().noBtn, false);
-            }
-            bx.appendChild(acts);
-          }
-          r.appendChild(ic2); r.appendChild(bx);
-          list.appendChild(r);
-        });
-      }
-      // лента открыта — непрочитанных больше нет
-      if (S) { S.unreadNotifs = 0; cacheSave(S); }
-      document.getElementById('ntfBadge').style.display = 'none';
+      renderFeed(res);
     }, function(e){ syncOn(false); fail(e); });
+  }
+
+  /** Кнопка «🧹 Очистить»: скрыть накопившиеся уведомления (watermark на
+      сервере, строки не удаляются; pending-запросы остаются в ленте). */
+  function clearFeed(){
+    haptic();
+    showConfirm(d().ntfClearQ, doClearFeed, d().ntfClear, d().cCancel);
+  }
+  function doClearFeed(){
+    // Оптимистично: пустая лента и скрытый бейдж сразу, сервер догоняет в фоне
+    const list = document.getElementById('ntfList');
+    const prevNodes = [];
+    while (list.firstChild) prevNodes.push(list.removeChild(list.firstChild));
+    const e2 = document.createElement('div');
+    e2.className = 'empty'; e2.textContent = d().ntfEmpty;
+    list.appendChild(e2);
+    document.getElementById('ntfBadge').style.display = 'none';
+    if (S) { S.unreadNotifs = 0; cacheSave(S); }
+    syncOn(true);
+    rpc('appFeedClear', [UID, TOKEN], function(res){
+      syncOn(false);
+      renderFeed(res); // форма как у notifs: pending-элементы легитимно вернутся
+      toast(d().ntfCleared);
+    }, function(e){
+      // Старый сервер (unknown api) или сеть: возвращаем прежние записи —
+      // узлы переносились целиком, их onclick-обработчики живы
+      syncOn(false);
+      list.innerHTML = '';
+      prevNodes.forEach(function(n){ list.appendChild(n); });
+      fail(e);
+    });
   }
 
   /** Действие из ленты: vac|extra|reg (админ), exask|annack (все). */
@@ -691,15 +766,21 @@
     haptic(); syncOn(true);
     const doneAdm = function(a2){
       syncOn(false); toast('✓');
-      loadNotifs();
-      load(true);
+      // Сервер вернул свежую ленту прямо в ответе решения — рендерим её без
+      // отдельного notifs-вызова; старый сервер (без feed) — прежний путь.
+      if (a2 && a2.feed) renderFeed(a2.feed);
+      else loadNotifs();
+      load(true); // один фоновый вызов: сверка state/бейджа
       if (ADM) renderAdmin(a2);
     };
     const doneSt = function(st){
       syncOn(false);
       if (st && st.notice) toast(st.notice); else toast('✓');
+      const fd = st && st.feed ? st.feed : null;
+      if (fd) { try { delete st.feed; } catch (e3) {} } // ленту не кэшируем в tb_state
       render(st);
-      loadNotifs();
+      if (fd) renderFeed(fd);
+      else loadNotifs(); // старый сервер без feed — прежний путь
     };
     const err2 = function(e){ syncOn(false); fail(e); };
     if (p[0] === 'vac') rpc('appAdminDecide', [UID, TOKEN, id, approve, ''], doneAdm, err2);
@@ -906,13 +987,39 @@
   }
 
   function load(bg){
-    if (bg) syncOn(true); else busy(true);
-    // если аватар уже в localStorage — не гоняем его base64 в каждом ответе
-    var haveAva = 0; try { haveAva = localStorage.getItem('tb_ava') ? 1 : 0; } catch (e) {}
-    rpc('appState', [UID, TOKEN, haveAva], function(st){ syncOn(false); render(st); },
-      function(e){ syncOn(false); fail(e); });
+    // Старт не блокирует UI даже без кэша: скелетон + sync-бар вместо
+    // оверлея (#loadOv/busy остаются для форм: отпуск, назначения и т.п.).
+    syncOn(true);
+    // Аватар НИКОГДА не едет в ответе state (noava:1 всегда) — при пустом
+    // кэше tb_ava его донесёт фоновый вызов avatar ниже.
+    rpc('appState', [UID, TOKEN, 1], function(st){
+      syncOn(false); render(st); fetchAvatar();
+    }, function(e){ syncOn(false); fail(e); });
   }
-  function fail(err){ busy(false); toast(err && err.message ? err.message : d().connErr, true); }
+  // Фоновая догрузка аватара: не блокирует ничего; при сбое/пустом ответе
+  // (в т.ч. старый сервер без api avatar) молча остаются инициалы.
+  var avaFetching = false;
+  function fetchAvatar(){
+    var have = '';
+    try { have = localStorage.getItem('tb_ava') || ''; } catch (e) {}
+    if (have || avaFetching) return;
+    avaFetching = true;
+    rpc('appAvatar', [UID, TOKEN], function(res){
+      avaFetching = false;
+      if (!res || !res.avatar) return;
+      try { localStorage.setItem('tb_ava', res.avatar); } catch (e) {}
+      const ava = document.getElementById('ava');
+      ava.textContent = '';
+      const ai = document.createElement('img');
+      ai.src = res.avatar; ai.alt = '';
+      ava.appendChild(ai);
+    }, function(e){ avaFetching = false; });
+  }
+  function fail(err){
+    busy(false);
+    document.body.classList.remove('booting');
+    toast(err && err.message ? err.message : d().connErr, true);
+  }
 
   function doAction(a, payload){
     haptic();
@@ -955,6 +1062,7 @@
 
   function render(st){
     S = st; busy(false);
+    document.body.classList.remove('booting'); // скелетон холодного старта
     LNG = st.lang === 'en' ? 'en' : 'ru';
     applyStatic();
     document.getElementById('name').textContent = st.name;
@@ -973,7 +1081,10 @@
         '<span class="bic"><img src="' + IMGS[imgKey] + '" alt=""></span>' +
         '<span class="lbl">' + label + '</span>' +
         '<svg class="ic chev" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
-      b.onclick = confirm ? showConfirm : function(){ doAction(action); };
+      b.onclick = confirm
+        ? function(){ showConfirm(d().cTitle, function(){ doAction(action); },
+            null, null, d().cLunch); }
+        : function(){ doAction(action); };
       act.appendChild(b);
     };
 
@@ -982,7 +1093,7 @@
       tsub.textContent = d().sinceShift + st.shiftStart + ' · ' + d().ofTarget + st.targetH + 'h';
       startTimer(st.shiftStartMs, st.lunchTotalMs || 0, 'url(#gGreen)');
       B('b-amber', 'coffee', d().bLunch, 'start_lunch');
-      B('b-red', 'stop', d().bEnd, null, true);
+      B('b-red', 'stop', d().bEnd, 'end_shift', true);
     } else if (st.state === 'ON_LUNCH') {
       pill.className = 'pill st-lunch'; tx.textContent = d().lunch;
       tsub.textContent = d().sinceLunch + st.lunchStart;
@@ -1111,15 +1222,30 @@
       const target = (S && S.targetH ? S.targetH : 8) * 3600000;
       setRing(S && S.state === 'ON_LUNCH' ? 1 : ms / target, color);
     };
-    tick(); timerInt = setInterval(tick, 15000);
+    tick(); timerInt = setInterval(tick, 1000); // чистая локальная математика
   }
   function stopTimer(){ if (timerInt) { clearInterval(timerInt); timerInt = null; } }
 
-  function showConfirm(){
-    document.getElementById('confirmSub').textContent = '';
+  // Общий confirm-модал: сообщение + отложенный callback; подписи кнопок
+  // необязательны (по умолчанию — тексты завершения смены, как раньше).
+  var confirmCb = null;
+  function showConfirm(message, onOk, okLabel, noLabel, sub){
+    confirmCb = onOk || null;
+    document.getElementById('cTitle').textContent = message || d().cTitle;
+    document.getElementById('confirmSub').textContent = sub || '';
+    document.getElementById('cYes').textContent = okLabel || d().cYes;
+    document.getElementById('cNo').textContent = noLabel || d().cNo;
     document.getElementById('confirmOv').classList.add('show');
   }
-  function hideConfirm(){ document.getElementById('confirmOv').classList.remove('show'); }
+  function confirmOk(){
+    var cb = confirmCb;
+    hideConfirm();
+    if (cb) cb();
+  }
+  function hideConfirm(){
+    confirmCb = null;
+    document.getElementById('confirmOv').classList.remove('show');
+  }
 
   const d1 = document.getElementById('d1'), d2 = document.getElementById('d2');
   function countDays(){
@@ -1195,11 +1321,23 @@
   };
 
   applyStatic();
-  // Мгновенный старт: рендерим прошлое состояние из кэша, сервер догоняет в фоне
+  // Иллюстрация отпуска вшита в сборку ровно один раз (в IMGS.vacArts) —
+  // src hero-картинки ставим из JS, дубля data-URI в HTML больше нет
+  document.getElementById('vacArtImg').src = IMGS.vacArts[0];
+  // Возврат в приложение после долгой паузы (>60 с) — тихая фоновая сверка
+  var hiddenAt = 0;
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    var away = hiddenAt ? Date.now() - hiddenAt : 0;
+    hiddenAt = 0;
+    if (away > 60000) load(true);
+  });
+  // Мгновенный старт: рендерим прошлое состояние из кэша, сервер догоняет в
+  // фоне; без кэша — статичный каркас со скелетоном вместо блокирующего спиннера
   (function boot(){
     var cached = cacheLoad();
     if (cached) { render(cached); load(true); }
-    else load(false);
+    else { document.body.classList.add('booting'); load(false); }
   })();
 </script>
 </body>
