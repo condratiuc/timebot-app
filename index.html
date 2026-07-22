@@ -151,6 +151,17 @@
   .srow{display:flex;align-items:center;background:#f8fafc;border-radius:13px;
     padding:10px 12px;font-size:13px;font-weight:600;justify-content:space-between}
   .srow.today{background:#e0e7ff}
+  /* Коробочки статуса команды 2×2 */
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .tbox{border-radius:14px;padding:12px 12px 10px;cursor:pointer;
+    transition:transform .08s,box-shadow .15s}
+  .tbox:active{transform:scale(.96)}
+  .tbox.sel{box-shadow:inset 0 0 0 2px rgba(16,24,40,.28)}
+  .tbox .n{font-size:24px;font-weight:800;line-height:1}
+  .tbox .l{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
+    color:#475467;margin-top:5px}
+  .plusbtn{margin-left:auto;width:28px;height:28px;border-radius:9px;border:0;flex:none;
+    background:#eef2ff;color:#4338ca;font-size:17px;font-weight:800;cursor:pointer;line-height:1}
   .tsec{margin:12px 0 6px;font-size:11px;font-weight:800;text-transform:uppercase;
     letter-spacing:.4px;color:var(--muted);display:flex;align-items:center;gap:7px}
   .tsec:first-child{margin-top:0}
@@ -271,7 +282,7 @@
       </div>
 
       <div class="card">
-        <button class="btn b-ghost" id="extraToggle" onclick="toggleExtra()" style="margin-top:0"></button>
+        <button class="btn simple b-ghost" id="extraToggle" onclick="toggleExtra()" style="margin-top:0"></button>
         <div id="extraForm" style="display:none">
           <label style="display:block;margin-top:10px"><span class="flbl" id="lExDate"></span>
             <input class="fld" type="date" id="exDate"></label>
@@ -332,23 +343,29 @@
       </div>
 
       <div class="card">
-        <h3><svg class="ic"><use href="#i-cal"/></svg><span id="hAdm"></span></h3>
-        <label class="flbl" id="lAdmEmp"></label>
-        <select class="fld" id="admEmp"></select>
-        <div class="frow" style="margin-top:10px">
-          <label><span class="flbl" id="lAdmFrom"></span><input class="fld" type="date" id="admFrom"></label>
-          <label><span class="flbl" id="lAdmTo"></span><input class="fld" type="date" id="admTo"></label>
+        <h3 style="margin-bottom:0"><svg class="ic"><use href="#i-cal"/></svg><span id="hAdm"></span>
+          <button class="plusbtn" id="admFormPlus" onclick="toggleBox('admFormBox','admFormPlus')">+</button></h3>
+        <div id="admFormBox" style="display:none">
+          <label class="flbl" id="lAdmEmp" style="display:block;margin-top:12px"></label>
+          <select class="fld" id="admEmp"></select>
+          <div class="frow" style="margin-top:10px">
+            <label><span class="flbl" id="lAdmFrom"></span><input class="fld" type="date" id="admFrom"></label>
+            <label><span class="flbl" id="lAdmTo"></span><input class="fld" type="date" id="admTo"></label>
+          </div>
+          <div class="frow">
+            <label><span class="flbl" id="lAdmStart"></span><input class="fld" type="time" id="admStart" value="09:00"></label>
+            <label><span class="flbl" id="lAdmEnd"></span><input class="fld" type="time" id="admEnd" value="18:00"></label>
+          </div>
+          <input class="fld" type="text" id="admNote" maxlength="200">
+          <button class="btn b-blue" id="admBtn" onclick="admAssign()"></button>
         </div>
-        <div class="frow">
-          <label><span class="flbl" id="lAdmStart"></span><input class="fld" type="time" id="admStart" value="09:00"></label>
-          <label><span class="flbl" id="lAdmEnd"></span><input class="fld" type="time" id="admEnd" value="18:00"></label>
-        </div>
-        <input class="fld" type="text" id="admNote" maxlength="200">
-        <button class="btn b-blue" id="admBtn" onclick="admAssign()"></button>
       </div>
       <div class="card">
-        <h3><svg class="ic"><use href="#i-chart"/></svg><span id="hAdmList"></span></h3>
-        <div class="vlist" id="admList" style="margin-top:0"></div>
+        <h3 style="margin-bottom:0"><svg class="ic"><use href="#i-chart"/></svg><span id="hAdmList"></span>
+          <button class="plusbtn" id="admListPlus" onclick="toggleBox('admListBox','admListPlus')">+</button></h3>
+        <div id="admListBox" style="display:none">
+          <div class="vlist" id="admList" style="margin-top:12px"></div>
+        </div>
       </div>
     </section>
   </div>
@@ -459,8 +476,8 @@
       admBtn:'Назначить', admList:'Ближайшие назначения (14 дней)',
       admEmpty:'Назначений пока нет', admPick:'Выберите сотрудника и даты',
       teamNow:'Команда сейчас', tOnShift:'На смене', tOnLunch:'На обеде',
-      tOnVac:'В отпуске', tAwaited:'Ждём сегодня', tSince:'с ', tUntil:'до ',
-      tNobody:'Сейчас никто не работает',
+      tOnVac:'В отпуске', tOnSick:'На больничном', tAwaited:'Ждём сегодня',
+      tSince:'с ', tUntil:'до ', tNobody:'Сейчас никто не работает',
       needsH:'Требуют решения', admPendingH:'Заявки на отпуск', admRegsH:'Заявки на регистрацию',
       admExtraH:'Доп. смены', exToggle:'➕ Запросить доп. смену', exDate:'Дата',
       exStart:'Начало', exEnd:'Конец', exNotePh:'Комментарий (необязательно)',
@@ -488,8 +505,8 @@
       admBtn:'Assign', admList:'Upcoming assignments (14 days)',
       admEmpty:'Nothing scheduled yet', admPick:'Pick an employee and dates',
       teamNow:'Team right now', tOnShift:'On shift', tOnLunch:'On lunch',
-      tOnVac:'On vacation', tAwaited:'Expected today', tSince:'since ', tUntil:'until ',
-      tNobody:'Nobody is working right now',
+      tOnVac:'On vacation', tOnSick:'On sick leave', tAwaited:'Expected today',
+      tSince:'since ', tUntil:'until ', tNobody:'Nobody is working right now',
       needsH:'Needs your decision', admPendingH:'Vacation requests', admRegsH:'Registration requests',
       admExtraH:'Extra shifts', exToggle:'➕ Request an extra shift', exDate:'Date',
       exStart:'Start', exEnd:'End', exNotePh:'Comment (optional)',
@@ -680,41 +697,84 @@
     }
     document.getElementById('apprCard').style.display = ab.childNodes.length ? 'block' : 'none';
 
-    // «Команда сейчас» — все строки только через textContent (данные из таблицы)
+    // «Команда сейчас»: сетка коробочек 2×2, тап раскрывает список людей.
+    // Все строки — только textContent (данные из таблицы).
     document.getElementById('hTeam').textContent = d().teamNow;
     const tb = document.getElementById('teamBox');
     tb.innerHTML = '';
-    const section = function(label, color, rows, mk, warn){
-      if (!rows || !rows.length) return;
+    const tm = a.team || {};
+    const cats = [
+      { k:'onShift', label:d().tOnShift, bg:'#d1fadf', fg:'#027a48',
+        mk:function(x){ return d().tSince + x.since; } },
+      { k:'onLunch', label:d().tOnLunch, bg:'#fef0c7', fg:'#b54708',
+        mk:function(x){ return d().tSince + x.since; } },
+      { k:'onVacation', label:d().tOnVac, bg:'#e0e7ff', fg:'#4338ca',
+        mk:function(x){ return d().tUntil + x.until; } },
+      { k:'onSick', label:d().tOnSick, bg:'#fee4e2', fg:'#b42318',
+        mk:function(x){ return d().tUntil + x.until; } },
+    ];
+    const grid = document.createElement('div'); grid.className = 'tgrid';
+    const detail = document.createElement('div');
+    detail.className = 'trows'; detail.style.marginTop = '9px';
+    let openCat = null;
+    const renderDetail = function(){
+      detail.innerHTML = '';
+      if (!openCat) return;
+      let cat = null;
+      cats.forEach(function(c){ if (c.k === openCat) cat = c; });
+      (tm[openCat] || []).forEach(function(x){
+        const r = document.createElement('div');
+        r.className = 'srow';
+        const l2 = document.createElement('span'); l2.textContent = x.name;
+        const r2 = document.createElement('b'); r2.textContent = cat.mk(x);
+        r.appendChild(l2); r.appendChild(r2);
+        detail.appendChild(r);
+      });
+    };
+    cats.forEach(function(c){
+      const box = document.createElement('div');
+      box.className = 'tbox';
+      box.style.background = c.bg;
+      const n = document.createElement('div');
+      n.className = 'n'; n.style.color = c.fg;
+      n.textContent = (tm[c.k] || []).length;
+      const l = document.createElement('div');
+      l.className = 'l'; l.textContent = c.label;
+      box.appendChild(n); box.appendChild(l);
+      box.onclick = function(){
+        haptic();
+        openCat = openCat === c.k ? null : c.k;
+        const boxes = grid.querySelectorAll('.tbox');
+        for (let bi = 0; bi < boxes.length; bi++) boxes[bi].classList.remove('sel');
+        if (openCat) box.classList.add('sel');
+        renderDetail();
+      };
+      grid.appendChild(box);
+    });
+    tb.appendChild(grid);
+    tb.appendChild(detail);
+
+    // «Ждём сегодня» — всегда развёрнуто (это предупреждение)
+    if (tm.awaited && tm.awaited.length) {
       const h = document.createElement('div');
       h.className = 'tsec';
       const dot = document.createElement('span');
-      dot.className = 'tdot'; dot.style.background = color;
+      dot.className = 'tdot'; dot.style.background = '#b54708';
       const tx2 = document.createElement('span');
-      tx2.textContent = label + ' · ' + rows.length;
+      tx2.textContent = d().tAwaited + ' · ' + tm.awaited.length;
       h.appendChild(dot); h.appendChild(tx2);
       tb.appendChild(h);
-      const box = document.createElement('div');
-      box.className = 'trows';
-      rows.forEach(function(x){
+      const wr = document.createElement('div');
+      wr.className = 'trows';
+      tm.awaited.forEach(function(x){
         const r = document.createElement('div');
-        r.className = 'srow' + (warn ? ' warn' : '');
+        r.className = 'srow warn';
         const l2 = document.createElement('span'); l2.textContent = x.name;
-        const r2 = document.createElement('b'); r2.textContent = mk(x);
+        const r2 = document.createElement('b'); r2.textContent = x.plan;
         r.appendChild(l2); r.appendChild(r2);
-        box.appendChild(r);
+        wr.appendChild(r);
       });
-      tb.appendChild(box);
-    };
-    const tm = a.team || {};
-    section(d().tOnShift, '#12b76a', tm.onShift, function(x){ return d().tSince + x.since; });
-    section(d().tOnLunch, '#f79009', tm.onLunch, function(x){ return d().tSince + x.since; });
-    section(d().tOnVac, '#6366f1', tm.onVacation, function(x){ return d().tUntil + x.until; });
-    section(d().tAwaited, '#b54708', tm.awaited, function(x){ return x.plan; }, true);
-    if (!tb.childNodes.length) {
-      const e2 = document.createElement('div');
-      e2.className = 'empty'; e2.textContent = d().tNobody;
-      tb.appendChild(e2);
+      tb.appendChild(wr);
     }
 
     const sel = document.getElementById('admEmp');
@@ -1019,6 +1079,14 @@
   const today = new Date().toISOString().slice(0, 10);
   d1.min = today; d2.min = today;
   document.getElementById('exDate').min = today;
+
+  function toggleBox(boxId, btnId){
+    haptic();
+    const b = document.getElementById(boxId);
+    const open = b.style.display === 'none';
+    b.style.display = open ? 'block' : 'none';
+    document.getElementById(btnId).textContent = open ? '−' : '+';
+  }
 
   function toggleExtra(){
     haptic();
