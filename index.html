@@ -383,6 +383,7 @@
         <div id="annBox" style="display:none">
           <textarea id="annText" maxlength="1500" style="margin-top:12px;height:84px"></textarea>
           <button class="btn b-blue" id="annBtn" onclick="sendAnn()"></button>
+          <div class="vlist" id="annList" style="margin-top:12px"></div>
         </div>
       </div>
       <div class="card">
@@ -464,6 +465,8 @@
       appAdminExtraDecide: function(a){ return { api:'adminextra', uid:a[0], t:a[1], reqId:a[2], approve:a[3]?1:0 }; },
       appNotifs: function(a){ return { api:'notifs', uid:a[0], t:a[1] }; },
       appAdminAnnounce: function(a){ return { api:'announce', uid:a[0], t:a[1], text:a[2] }; },
+      appEmpExtraRespond: function(a){ return { api:'exrespond', uid:a[0], t:a[1], batchId:a[2], accept:a[3]?1:0 }; },
+      appAnnAck: function(a){ return { api:'annack', uid:a[0], t:a[1], annId:a[2] }; },
     };
     fetch(API_URL, { method: 'POST', body: JSON.stringify(map[fn](args)) })
       .then(function(r){ return r.json(); })
@@ -507,7 +510,8 @@
       admEmpty:'Назначений пока нет', admPick:'Выберите сотрудника и даты',
       admExtra:'Это дополнительная смена', annH:'Объявление всем',
       annPh:'Текст объявления — придёт каждому в чат и в ленту',
-      annSend:'Отправить всем',
+      annSend:'Отправить всем', annSeen:'Ознакомились: ',
+      ackBtn:'👁 Ознакомлен', exYes:'✅ Выйду', exNo:'❌ Не могу',
       teamNow:'Команда сейчас', tOnShift:'На смене', tOnLunch:'На обеде',
       tOnVac:'В отпуске', tOnSick:'На больничном', tAwaited:'Ждём сегодня',
       tSince:'с ', tUntil:'до ', tNobody:'Сейчас никто не работает',
@@ -540,7 +544,8 @@
       admEmpty:'Nothing scheduled yet', admPick:'Pick an employee and dates',
       admExtra:'This is an extra shift', annH:'Announcement to everyone',
       annPh:'Message text — delivered to every chat and feed',
-      annSend:'Send to everyone',
+      annSend:'Send to everyone', annSeen:'Seen by: ',
+      ackBtn:'👁 Got it', exYes:'✅ I will come', exNo:'❌ Cannot make it',
       teamNow:'Team right now', tOnShift:'On shift', tOnLunch:'On lunch',
       tOnVac:'On vacation', tOnSick:'On sick leave', tAwaited:'Expected today',
       tSince:'since ', tUntil:'until ', tNobody:'Nobody is working right now',
@@ -646,20 +651,27 @@
           const tm3 = document.createElement('div');
           tm3.className = 'ntm'; tm3.textContent = x.ts;
           bx.appendChild(tx3); bx.appendChild(tm3);
-          // Заявка ещё Pending и мы админ → кнопки решения прямо в ленте
+          // Действие ещё актуально → кнопки прямо в записи ленты
           if (x.action && res.act && res.act[x.action]) {
             const acts = document.createElement('div');
             acts.className = 'frow';
             acts.style.marginTop = '8px';
-            const ok = document.createElement('button');
-            ok.className = 'btn2 ok'; ok.style.padding = '9px';
-            ok.textContent = d().okBtn;
-            ok.onclick = function(){ ntfAct(x.action, true); };
-            const no = document.createElement('button');
-            no.className = 'btn2 no'; no.style.padding = '9px';
-            no.textContent = d().noBtn;
-            no.onclick = function(){ ntfAct(x.action, false); };
-            acts.appendChild(ok); acts.appendChild(no);
+            const mkB = function(cls, label, approve){
+              const b = document.createElement('button');
+              b.className = 'btn2 ' + cls; b.style.padding = '9px';
+              b.textContent = label;
+              b.onclick = function(){ ntfAct(x.action, approve); };
+              acts.appendChild(b);
+            };
+            if (x.action.indexOf('annack:') === 0) {
+              mkB('ok', d().ackBtn, true); // одна кнопка «Ознакомлен»
+            } else if (x.action.indexOf('exask:') === 0) {
+              mkB('ok', d().exYes, true);
+              mkB('no', d().exNo, false);
+            } else {
+              mkB('ok', d().okBtn, true);
+              mkB('no', d().noBtn, false);
+            }
             bx.appendChild(acts);
           }
           r.appendChild(ic2); r.appendChild(bx);
@@ -672,21 +684,29 @@
     }, function(e){ syncOn(false); fail(e); });
   }
 
-  /** Решение из ленты: vac:<id> | extra:<id> | reg:<id>. */
+  /** Действие из ленты: vac|extra|reg (админ), exask|annack (все). */
   function ntfAct(action, approve){
     const p = action.split(':');
     const id = p.slice(1).join(':');
     haptic(); syncOn(true);
-    const done = function(a2){
+    const doneAdm = function(a2){
       syncOn(false); toast('✓');
-      loadNotifs();      // кнопки исчезнут — заявка больше не Pending
-      load(true);        // обновить бейджи
+      loadNotifs();
+      load(true);
       if (ADM) renderAdmin(a2);
     };
+    const doneSt = function(st){
+      syncOn(false);
+      if (st && st.notice) toast(st.notice); else toast('✓');
+      render(st);
+      loadNotifs();
+    };
     const err2 = function(e){ syncOn(false); fail(e); };
-    if (p[0] === 'vac') rpc('appAdminDecide', [UID, TOKEN, id, approve, ''], done, err2);
-    else if (p[0] === 'extra') rpc('appAdminExtraDecide', [UID, TOKEN, id, approve], done, err2);
-    else if (p[0] === 'reg') rpc('appAdminRegDecide', [UID, TOKEN, id, approve], done, err2);
+    if (p[0] === 'vac') rpc('appAdminDecide', [UID, TOKEN, id, approve, ''], doneAdm, err2);
+    else if (p[0] === 'extra') rpc('appAdminExtraDecide', [UID, TOKEN, id, approve], doneAdm, err2);
+    else if (p[0] === 'reg') rpc('appAdminRegDecide', [UID, TOKEN, id, approve], doneAdm, err2);
+    else if (p[0] === 'exask') rpc('appEmpExtraRespond', [UID, TOKEN, id, approve], doneSt, err2);
+    else if (p[0] === 'annack') rpc('appAnnAck', [UID, TOKEN, id], doneSt, err2);
   }
 
   // --- Админ: график смен ---
@@ -778,6 +798,22 @@
       });
       tb.appendChild(wr);
     }
+
+    // История объявлений с прогрессом «ознакомились»
+    const al = document.getElementById('annList');
+    al.innerHTML = '';
+    (a.anns || []).forEach(function(an){
+      const c = document.createElement('div');
+      c.className = 'vcard';
+      const vt = document.createElement('div');
+      vt.className = 'vp'; vt.textContent = an.text;
+      const vr = document.createElement('div');
+      vr.className = 'vr';
+      vr.textContent = d().annSeen + an.acks + ' / ' + an.total +
+        (an.names ? ' · ' + an.names : '');
+      c.appendChild(vt); c.appendChild(vr);
+      al.appendChild(c);
+    });
 
     const sel = document.getElementById('admEmp');
     sel.innerHTML = '';
@@ -986,8 +1022,9 @@
         // Данные из ячеек листа — только textContent, никакого innerHTML
         const r = document.createElement('div');
         r.className = 'srow' + (s2.ds === todayDs ? ' today' : '');
+        const wait = s2.note && s2.note.indexOf('ожидает') !== -1;
         const left = document.createElement('span');
-        left.textContent = (s2.ex ? '➕ ' : '') + s2.d +
+        left.textContent = (s2.ex ? (wait ? '➕⏳ ' : '➕ ') : '') + s2.d +
           (s2.ds === todayDs ? ' · ' + d().schedToday : '');
         const right = document.createElement('b');
         right.textContent = s2.s + '–' + s2.e;
