@@ -626,6 +626,22 @@
           const tm3 = document.createElement('div');
           tm3.className = 'ntm'; tm3.textContent = x.ts;
           bx.appendChild(tx3); bx.appendChild(tm3);
+          // Заявка ещё Pending и мы админ → кнопки решения прямо в ленте
+          if (x.action && res.act && res.act[x.action]) {
+            const acts = document.createElement('div');
+            acts.className = 'frow';
+            acts.style.marginTop = '8px';
+            const ok = document.createElement('button');
+            ok.className = 'btn2 ok'; ok.style.padding = '9px';
+            ok.textContent = d().okBtn;
+            ok.onclick = function(){ ntfAct(x.action, true); };
+            const no = document.createElement('button');
+            no.className = 'btn2 no'; no.style.padding = '9px';
+            no.textContent = d().noBtn;
+            no.onclick = function(){ ntfAct(x.action, false); };
+            acts.appendChild(ok); acts.appendChild(no);
+            bx.appendChild(acts);
+          }
           r.appendChild(ic2); r.appendChild(bx);
           list.appendChild(r);
         });
@@ -634,6 +650,23 @@
       if (S) { S.unreadNotifs = 0; cacheSave(S); }
       document.getElementById('ntfBadge').style.display = 'none';
     }, function(e){ syncOn(false); fail(e); });
+  }
+
+  /** Решение из ленты: vac:<id> | extra:<id> | reg:<id>. */
+  function ntfAct(action, approve){
+    const p = action.split(':');
+    const id = p.slice(1).join(':');
+    haptic(); syncOn(true);
+    const done = function(a2){
+      syncOn(false); toast('✓');
+      loadNotifs();      // кнопки исчезнут — заявка больше не Pending
+      load(true);        // обновить бейджи
+      if (ADM) renderAdmin(a2);
+    };
+    const err2 = function(e){ syncOn(false); fail(e); };
+    if (p[0] === 'vac') rpc('appAdminDecide', [UID, TOKEN, id, approve, ''], done, err2);
+    else if (p[0] === 'extra') rpc('appAdminExtraDecide', [UID, TOKEN, id, approve], done, err2);
+    else if (p[0] === 'reg') rpc('appAdminRegDecide', [UID, TOKEN, id, approve], done, err2);
   }
 
   // --- Админ: график смен ---
