@@ -1083,7 +1083,7 @@
     (st.myExtras || []).forEach(function(x){
       const r = document.createElement('div');
       r.className = 'srow';
-      const l3 = document.createElement('span'); l3.textContent = d().exWait + x.d;
+      const l3 = document.createElement('span'); l3.textContent = '⏳ ' + x.d;
       const r3 = document.createElement('b'); r3.textContent = x.s + '–' + x.e;
       r.appendChild(l3); r.appendChild(r3);
       em.appendChild(r);
