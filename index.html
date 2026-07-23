@@ -567,6 +567,8 @@
       ntfClear:'Очистить',
       ntfClearQ:'Скрыть все уведомления? Запросы, ожидающие решения, останутся.',
       ntfCleared:'Лента очищена', cCancel:'Отмена',
+      appTitle:'Учёт времени',
+      stPending:'Ожидает', stApproved:'Одобрено', stDeclined:'Отклонено',
     },
     en: {
       hours:'My hours', today:'Today', week:'Week', shifts:'Shifts',
@@ -604,6 +606,8 @@
       ntfClear:'Clear',
       ntfClearQ:'Hide all notifications? Items awaiting your decision will remain.',
       ntfCleared:'Feed cleared', cCancel:'Cancel',
+      appTitle:'Time Tracking',
+      stPending:'Pending', stApproved:'Approved', stDeclined:'Declined',
     },
   };
   function d(){ return DICT[LNG] || DICT.ru; }
@@ -619,6 +623,8 @@
   }
 
   function applyStatic(){
+    document.title = d().appTitle;
+    document.documentElement.lang = LNG;
     document.getElementById('date').textContent =
       new Date().toLocaleDateString(LNG === 'en' ? 'en-GB' : 'ru-RU',
         { weekday:'long', day:'numeric', month:'long' });
@@ -685,7 +691,9 @@
   // --- Лента уведомлений ---
   // Общий рендер ленты: ответы notifs, feedclear и поле feed decision-RPC
   // имеют одну форму {items, act}. Только textContent (данные из таблицы).
+  let FEED = null; // последний payload ленты — для перерисовки при смене языка
   function renderFeed(res){
+    FEED = res || { items: [] }; // каждый путь отрисовки обновляет кэш
     const list = document.getElementById('ntfList');
     list.innerHTML = '';
     if (!res || !res.items || !res.items.length) {
@@ -730,9 +738,12 @@
         list.appendChild(r);
       });
     }
-    // лента на экране — непрочитанных больше нет
-    if (S) { S.unreadNotifs = 0; cacheSave(S); }
-    document.getElementById('ntfBadge').style.display = 'none';
+    // Лента на экране — непрочитанных больше нет. Перерисовка после смены
+    // языка может идти с другой вкладки — тогда бейдж не трогаем.
+    if (document.getElementById('pgNtf').classList.contains('on')) {
+      if (S) { S.unreadNotifs = 0; cacheSave(S); }
+      document.getElementById('ntfBadge').style.display = 'none';
+    }
   }
   function loadNotifs(){
     syncOn(true);
@@ -1086,7 +1097,14 @@
   function setLang(l){
     if (l === LNG) return;
     haptic(); busy(true);
-    rpc('appSetLang', [UID, TOKEN, l], render, fail);
+    rpc('appSetLang', [UID, TOKEN, l], function(st){
+      render(st);
+      // «Лента» и «Админ» рисуются при заходе на вкладку — после смены языка
+      // перерисовываем их из последних payload'ов, без запросов к серверу
+      // (тексты записей ленты остаются на языке записи — это данные)
+      if (ADM) renderAdmin(ADM);
+      if (FEED) renderFeed(FEED);
+    }, fail);
   }
 
   function initials(name){
@@ -1167,6 +1185,7 @@
         // Данные из ячеек листа — только textContent, никакого innerHTML
         const r = document.createElement('div');
         r.className = 'srow' + (s2.ds === todayDs ? ' today' : '');
+        // «ожидает» — канонический маркер заметки с сервера (инвариант 8), не локализуется
         const wait = s2.note && s2.note.indexOf('ожидает') !== -1;
         const left = document.createElement('span');
         left.textContent = (s2.ex ? (wait ? '➕⏳ ' : '➕ ') : '') + s2.d +
@@ -1228,8 +1247,8 @@
         const left = document.createElement('span');
         left.textContent = v.id + ' · ' + v.period;
         const st2 = document.createElement('span');
-        st2.className = 'vst ' + v.status;
-        st2.textContent = v.status;
+        st2.className = 'vst ' + v.status; // класс — сырой enum: CSS .vst.Pending и т.д.
+        st2.textContent = d()['st' + v.status] || v.status;
         r.appendChild(left); r.appendChild(st2);
         vl.appendChild(r);
       });
