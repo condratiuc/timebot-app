@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <!-- Обязателен для мобильной вёрстки: на GitHub Pages его никто не вставит за нас
      (на GAS это делал addMetaTag; дубль безвреден) -->
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Учёт времени</title>
 <!-- URL страницы содержит подписанный токен — не отдаём его в Referer внешним хостам -->
 <meta name="referrer" content="no-referrer">
@@ -16,11 +16,13 @@
     --bg:#eef1f7; --card:#ffffff; --text:#101828; --muted:#667085;
     --primary:#4f46e5; --primary2:#3b82f6; --green:#12b76a; --amber:#f79009;
     --red:#f04438; --ring:#e4e7ec;
-    --r:20px; --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.07);
+    --r:20px; --shadow:0 1px 2px rgba(16,24,40,.05),0 6px 14px rgba(79,70,229,.05),
+      0 14px 32px rgba(16,24,40,.07);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    background:var(--bg);color:var(--text);padding-bottom:92px}
+    background:var(--bg);color:var(--text);padding-bottom:92px;
+    padding-bottom:calc(92px + env(safe-area-inset-bottom))}
   .ic{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none;
     stroke-linecap:round;stroke-linejoin:round;flex:none}
 
@@ -33,15 +35,19 @@
   .hrow{display:flex;align-items:center;gap:12px}
   .ava{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.22);
     display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;
-    border:2px solid rgba(255,255,255,.35);overflow:hidden;cursor:pointer;flex:none}
+    border:2px solid rgba(255,255,255,.35);overflow:hidden;cursor:pointer;flex:none;
+    transition:transform .15s}
+  .ava:active{transform:scale(.93)}
   .ava img{width:100%;height:100%;object-fit:cover}
   .who{flex:1;min-width:0}
   .hi{font-size:12px;opacity:.8;text-transform:capitalize}
   .nm{font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .lsw{display:flex;gap:3px;background:rgba(255,255,255,.16);border-radius:999px;padding:3px}
   .lsw button{border:0;background:transparent;color:#fff;font-weight:800;font-size:11px;
-    padding:5px 9px;border-radius:999px;cursor:pointer;opacity:.65}
+    padding:5px 9px;border-radius:999px;cursor:pointer;opacity:.65;
+    transition:transform .15s,opacity .2s}
   .lsw button.on{background:#fff;color:#4338ca;opacity:1}
+  .lsw button:active{transform:scale(.92)}
 
   .wrap{padding:0 14px;margin-top:-28px}
   .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
@@ -58,7 +64,10 @@
   .ringBox{position:relative;width:172px;height:172px}
   .ringBox svg{transform:rotate(-90deg)}
   .ringBg{stroke:var(--ring)}
-  .ringFg{stroke:var(--green);transition:stroke-dashoffset .6s ease,stroke .3s}
+  .ringFg{stroke:var(--green);transition:stroke-dashoffset .6s ease,stroke .3s,filter .3s}
+  /* Мягкое свечение кольца, пока смена/обед идут (класс ставит render) */
+  .ringBox.live .ringFg{filter:drop-shadow(0 0 7px rgba(16,185,129,.42))}
+  .ringBox.live.lunch .ringFg{filter:drop-shadow(0 0 7px rgba(245,158,11,.42))}
   .ringIn{position:absolute;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:2px}
   .timer{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.5px}
@@ -67,8 +76,10 @@
     padding:6px 13px;border-radius:999px;margin-top:10px}
   .pill .dot{width:7px;height:7px;border-radius:50%}
   .st-none{background:#f2f4f7;color:var(--muted)} .st-none .dot{background:#98a2b3}
-  .st-open{background:#d1fadf;color:#027a48} .st-open .dot{background:var(--green)}
-  .st-lunch{background:#fef0c7;color:#b54708} .st-lunch .dot{background:var(--amber)}
+  .st-open{background:linear-gradient(135deg,#d9fbe6,#c1f5d5);color:#027a48}
+  .st-open .dot{background:var(--green)}
+  .st-lunch{background:linear-gradient(135deg,#fef3d4,#fde9b3);color:#b54708}
+  .st-lunch .dot{background:var(--amber)}
 
   /* Кнопки: компактные, мягкие пастельные градиенты, милые иконки-стикеры */
   .btn{position:relative;overflow:hidden;display:flex;align-items:center;gap:11px;
@@ -113,7 +124,8 @@
 
   /* Статы */
   .stats{display:flex;gap:10px}
-  .stat{flex:1;background:#f8fafc;border-radius:15px;padding:12px 8px;text-align:center}
+  .stat{flex:1;background:linear-gradient(180deg,#f8fafc,#f1f4fa);border-radius:15px;
+    padding:12px 8px;text-align:center}
   .stat .sic{width:30px;height:30px;border-radius:10px;margin:0 auto 6px;
     display:flex;align-items:center;justify-content:center}
   .stat .sic .ic{width:16px;height:16px}
@@ -134,25 +146,36 @@
   .chip:active{transform:scale(.95)}
   .chip.on{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;
     color:#fff;box-shadow:0 6px 14px -4px rgba(99,102,241,.55)}
-  .dates{display:flex;gap:10px;margin-bottom:6px}
-  .dates label{flex:1;font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
-  .dates input{width:100%;margin-top:5px;padding:12px 10px;border:1.5px solid #e4e7ec;
-    border-radius:13px;font-size:15px;background:#f8fafc;font-family:inherit;
-    transition:border-color .2s,box-shadow .2s}
-  .dates input:focus,textarea:focus{outline:none;border-color:var(--primary);
+  /* Поля дат/времени: двухколоночная сетка с настоящим зазором. У flex-детей
+     min-width:auto — нативные date-инпуты со своей внутренней шириной
+     распирали ряд и «слипались» на узких экранах; grid + min-width:0 лечит. */
+  .dates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+  .dates label{min-width:0;display:block;font-size:10px;color:var(--muted);
+    text-transform:uppercase;font-weight:700;letter-spacing:.4px}
+  textarea:focus{outline:none;border-color:var(--primary);
     box-shadow:0 0 0 3px rgba(79,70,229,.15)}
   .days{font-size:13px;color:var(--primary);font-weight:800;margin:6px 0 8px;min-height:18px}
   textarea{width:100%;padding:12px;border:1.5px solid #e4e7ec;border-radius:13px;
     font-size:15px;font-family:inherit;background:#f8fafc;resize:none;height:64px}
-  .fld{width:100%;margin-top:5px;padding:12px 10px;border:1.5px solid #e4e7ec;
-    border-radius:13px;font-size:15px;background:#f8fafc;font-family:inherit;
-    transition:border-color .2s,box-shadow .2s}
+  .fld{width:100%;min-width:0;margin-top:6px;padding:11px 12px;min-height:46px;
+    border:1.5px solid #e4e7ec;border-radius:13px;font-size:15px;background:#f8fafc;
+    font-family:inherit;color:var(--text);transition:border-color .2s,box-shadow .2s}
   .fld:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.15)}
-  .flbl{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
+  /* Нативные date/time в iOS/Android-вебвью рисуются по-разному: задаём вид
+     явно (appearance/фон/рамку), выравниваем значение влево и держим высоту —
+     пустой date-инпут в iOS иначе схлопывается и центрирует текст */
+  input.fld,textarea{-webkit-appearance:none;appearance:none}
+  input.fld[type=date],input.fld[type=time]{display:flex;align-items:center;line-height:1.2}
+  input.fld::-webkit-date-and-time-value{text-align:left;margin:0}
+  input.fld::-webkit-calendar-picker-indicator{opacity:.6}
+  .flbl{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700;
+    letter-spacing:.4px}
   .frow{display:flex;gap:10px;margin-bottom:6px}
-  .frow>label{flex:1}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+  .fgrid>label{min-width:0;display:block}
   .del{border:0;background:#fee4e2;color:#b42318;border-radius:9px;width:28px;height:28px;
-    font-weight:800;cursor:pointer;flex:none;margin-left:8px}
+    font-weight:800;cursor:pointer;flex:none;margin-left:8px;transition:transform .15s}
+  .del:active{transform:scale(.88)}
   .srow{display:flex;align-items:center;background:#f8fafc;border-radius:13px;
     padding:10px 12px;font-size:13px;font-weight:600;justify-content:space-between}
   .srow.today{background:#e0e7ff}
@@ -166,7 +189,9 @@
   .tbox .l{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;
     color:#475467;margin-top:5px}
   .plusbtn{margin-left:auto;width:28px;height:28px;border-radius:9px;border:0;flex:none;
-    background:#eef2ff;color:#4338ca;font-size:17px;font-weight:800;cursor:pointer;line-height:1}
+    background:#eef2ff;color:#4338ca;font-size:17px;font-weight:800;cursor:pointer;
+    line-height:1;transition:transform .15s}
+  .plusbtn:active{transform:scale(.88)}
   .clearbtn{margin-left:auto;border:0;flex:none;background:#eef2ff;color:#4338ca;
     font-size:11.5px;font-weight:800;border-radius:9px;padding:7px 10px;cursor:pointer;
     line-height:1;transition:transform .08s}
@@ -205,15 +230,22 @@
   .vst.Approved{background:#d1fadf;color:#027a48}
   .vst.Declined{background:#fee4e2;color:#b42318}
   .empty{color:var(--muted);font-size:13px;text-align:center;padding:8px 0}
+  /* Единый пустой блок: иллюстрация + подпись (картинка опциональна) */
+  .empty2{display:flex;flex-direction:column;align-items:center;gap:9px;
+    padding:12px 0 6px;color:var(--muted);font-size:13px;text-align:center}
+  .empty2 .eimg{width:118px;max-width:60%;height:auto;border-radius:18px;
+    animation:up .3s ease}
 
   /* Нижняя навигация */
   .tabbar{position:fixed;left:12px;right:12px;bottom:12px;background:rgba(255,255,255,.92);
-    backdrop-filter:blur(12px);border-radius:20px;box-shadow:0 8px 30px rgba(16,24,40,.16);
-    display:flex;padding:8px;z-index:40}
+    backdrop-filter:blur(14px) saturate(1.4);border-radius:20px;
+    box-shadow:0 8px 30px rgba(16,24,40,.16);display:flex;padding:8px;z-index:40;
+    bottom:calc(12px + env(safe-area-inset-bottom))}
   .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
     padding:8px 0;border-radius:14px;cursor:pointer;color:var(--muted);
     font-size:11px;font-weight:700;border:0;background:transparent;
-    transition:background .2s,color .2s}
+    transition:background .2s,color .2s,transform .15s}
+  .tab:active{transform:scale(.93)}
   .tab .ic{width:22px;height:22px}
   .tab.on{background:linear-gradient(135deg,#eef2ff,#ede9fe);color:#4338ca;
     box-shadow:inset 0 0 0 1px rgba(99,102,241,.25)}
@@ -221,7 +253,10 @@
   /* Оверлеи */
   .overlay{position:fixed;inset:0;background:rgba(16,24,40,.5);display:none;
     align-items:center;justify-content:center;z-index:50}
-  .overlay.show{display:flex}
+  .overlay.show{display:flex;animation:fadeIn .18s ease}
+  .overlay.show .modal{animation:pop .22s ease}
+  @keyframes fadeIn{from{opacity:0}}
+  @keyframes pop{from{opacity:0;transform:scale(.93) translateY(10px)}}
   .modal{background:#fff;border-radius:22px;padding:22px;width:86%;max-width:340px;text-align:center}
   .modal p{margin-bottom:14px;font-size:15px}
   .spin{width:38px;height:38px;border:4px solid #e0e7ff;border-top-color:var(--primary);
@@ -229,9 +264,12 @@
   @keyframes sp{to{transform:rotate(360deg)}}
   .toast{position:fixed;left:14px;right:14px;bottom:86px;background:#101828;color:#fff;
     padding:14px 16px;border-radius:14px;font-size:14px;opacity:0;transform:translateY(12px);
-    transition:.25s;z-index:60;pointer-events:none}
+    transition:.25s;z-index:60;pointer-events:none;
+    bottom:calc(86px + env(safe-area-inset-bottom))}
   .toast.show{opacity:1;transform:none}
   .toast.err{background:var(--red)}
+  button:focus-visible,.chip:focus-visible,.tbox:focus-visible{
+    outline:2px solid rgba(99,102,241,.55);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -268,7 +306,7 @@
     <section class="page on" id="pgHome">
       <div class="card">
         <div class="ringWrap">
-          <div class="ringBox">
+          <div class="ringBox" id="ringBox">
             <svg width="172" height="172">
               <defs>
                 <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="1">
@@ -303,7 +341,7 @@
         <div id="extraForm" style="display:none">
           <label style="display:block;margin-top:10px"><span class="flbl" id="lExDate"></span>
             <input class="fld" type="date" id="exDate"></label>
-          <div class="frow" style="margin-top:6px">
+          <div class="fgrid" style="margin-top:6px">
             <label><span class="flbl" id="lExStart"></span><input class="fld" type="time" id="exStart" value="09:00"></label>
             <label><span class="flbl" id="lExEnd"></span><input class="fld" type="time" id="exEnd" value="18:00"></label>
           </div>
@@ -335,8 +373,8 @@
         <h3><svg class="ic"><use href="#i-plane"/></svg><span id="hVac"></span></h3>
         <div class="chips" id="types"></div>
         <div class="dates">
-          <label><span id="lFrom"></span><input type="date" id="d1"></label>
-          <label><span id="lTo"></span><input type="date" id="d2"></label>
+          <label><span id="lFrom"></span><input class="fld" type="date" id="d1"></label>
+          <label><span id="lTo"></span><input class="fld" type="date" id="d2"></label>
         </div>
         <div class="days" id="days"></div>
         <textarea id="reason"></textarea>
@@ -372,11 +410,11 @@
         <div id="admFormBox" style="display:none">
           <label class="flbl" id="lAdmEmp" style="display:block;margin-top:12px"></label>
           <select class="fld" id="admEmp"></select>
-          <div class="frow" style="margin-top:10px">
+          <div class="fgrid" style="margin-top:10px">
             <label><span class="flbl" id="lAdmFrom"></span><input class="fld" type="date" id="admFrom"></label>
             <label><span class="flbl" id="lAdmTo"></span><input class="fld" type="date" id="admTo"></label>
           </div>
-          <div class="frow">
+          <div class="fgrid">
             <label><span class="flbl" id="lAdmStart"></span><input class="fld" type="time" id="admStart" value="09:00"></label>
             <label><span class="flbl" id="lAdmEnd"></span><input class="fld" type="time" id="admEnd" value="18:00"></label>
           </div>
@@ -519,7 +557,31 @@
     // В gas-сборке это data-URI, в web-сборке — ОТНОСИТЕЛЬНЫЕ url отдельных
     // .webp рядом с index.html (браузер скачает только при присвоении src).
     vacArts: ['vac-main.webp', 'vac-sick.webp', 'vac-unpaid.webp', 'vac-other.webp'],
+    // Иллюстрации пустых состояний — тот же ленивый контракт, что и vacArts:
+    // в web-сборке это отдельные .webp, src ставится только когда пустой блок
+    // реально рендерится на открытой вкладке (лента/админ — по заходу,
+    // «Мои заявки» — после первого открытия «Отпуска», см. renderVlist)
+    emptyFeed: 'empty-feed.webp',
+    teamIdle: 'team-idle.webp',
+    emptyReq: 'empty-req.webp',
   };
+
+  // Единый пустой блок: (опциональная) иллюстрация + подпись; только textContent
+  function emptyEl(imgKey, text){
+    const w = document.createElement('div');
+    w.className = 'empty2';
+    if (imgKey && IMGS[imgKey]) {
+      const im = document.createElement('img');
+      im.className = 'eimg'; im.alt = ''; im.loading = 'lazy';
+      im.onerror = function(){ im.style.display = 'none'; }; // web: файл недоступен — просто текст
+      im.src = IMGS[imgKey];
+      w.appendChild(im);
+    }
+    const t2 = document.createElement('div');
+    t2.textContent = text;
+    w.appendChild(t2);
+    return w;
+  }
 
   // Ленивая иллюстрация отпуска: src ставим только после первого открытия
   // вкладки «Отпуск» (vacArtOn) — старт приложения не тянет ничего отпускного.
@@ -684,8 +746,9 @@
     });
     if (p === 'adm') loadAdmin(); // каждый заход — свежий статус команды
     if (p === 'ntf') loadNotifs();
-    // Первый заход на «Отпуск» — только теперь ставим src иллюстрации
-    if (p === 'vac' && !vacArtOn) { vacArtOn = true; setVacArt(); }
+    // Первый заход на «Отпуск» — только теперь ставим src иллюстраций
+    // (главной и, при пустом списке заявок, ленивой заглушки)
+    if (p === 'vac' && !vacArtOn) { vacArtOn = true; setVacArt(); if (S) renderVlist(S); }
   }
 
   // --- Лента уведомлений ---
@@ -697,9 +760,7 @@
     const list = document.getElementById('ntfList');
     list.innerHTML = '';
     if (!res || !res.items || !res.items.length) {
-      const e2 = document.createElement('div');
-      e2.className = 'empty'; e2.textContent = d().ntfEmpty;
-      list.appendChild(e2);
+      list.appendChild(emptyEl('emptyFeed', d().ntfEmpty));
     } else {
       res.items.forEach(function(x){
         const r = document.createElement('div');
@@ -764,9 +825,7 @@
     const list = document.getElementById('ntfList');
     const prevNodes = [];
     while (list.firstChild) prevNodes.push(list.removeChild(list.firstChild));
-    const e2 = document.createElement('div');
-    e2.className = 'empty'; e2.textContent = d().ntfEmpty;
-    list.appendChild(e2);
+    list.appendChild(emptyEl('emptyFeed', d().ntfEmpty));
     document.getElementById('ntfBadge').style.display = 'none';
     if (S) { S.unreadNotifs = 0; cacheSave(S); }
     syncOn(true);
@@ -882,6 +941,11 @@
     tb.appendChild(grid);
     tb.appendChild(detail);
 
+    // Никого нет ни в одной категории — милая заглушка вместо голых нулей
+    let anybody = false;
+    cats.forEach(function(c){ if ((tm[c.k] || []).length) anybody = true; });
+    if (!anybody) tb.appendChild(emptyEl('teamIdle', d().tNobody));
+
     // «Ждём сегодня» — всегда развёрнуто (это предупреждение)
     if (tm.awaited && tm.awaited.length) {
       const h = document.createElement('div');
@@ -931,7 +995,7 @@
     const list = document.getElementById('admList');
     list.innerHTML = '';
     if (!a.list || !a.list.length) {
-      list.innerHTML = '<div class="empty">' + d().admEmpty + '</div>';
+      list.appendChild(emptyEl('', d().admEmpty));
       return;
     }
     a.list.forEach(function(s){
@@ -1160,6 +1224,10 @@
       setRing(0, '#e4e7ec');
       B('b-green', 'play', d().bStart, 'start_shift');
     }
+    // Свечение кольца, пока смена/обед активны (CSS .ringBox.live[.lunch])
+    document.getElementById('ringBox').className =
+      st.state === 'OPEN' ? 'ringBox live' :
+      st.state === 'ON_LUNCH' ? 'ringBox live lunch' : 'ringBox';
 
     // Вкладка «Админ» — только для role=admin; бейдж = ожидающие решения
     document.getElementById('tabAdm').style.display = st.isAdmin ? 'flex' : 'none';
@@ -1237,9 +1305,18 @@
       types.appendChild(c);
     });
 
+    renderVlist(st);
+
+    cacheSave(st);
+  }
+
+  // «Мои заявки» — вынесено из render(): первый заход на «Отпуск» перерисовывает
+  // список, чтобы ленивая иллюстрация пустого состояния грузилась только после
+  // реального открытия вкладки (web-сборка не тянет её на старте)
+  function renderVlist(st){
     const vl = document.getElementById('vlist'); vl.innerHTML = '';
     if (!st.vacations || !st.vacations.length) {
-      vl.innerHTML = '<div class="empty">' + d().noReq + '</div>';
+      vl.appendChild(emptyEl(vacArtOn ? 'emptyReq' : '', d().noReq));
     } else {
       st.vacations.forEach(function(v){
         const r = document.createElement('div');
@@ -1253,8 +1330,6 @@
         vl.appendChild(r);
       });
     }
-
-    cacheSave(st);
   }
 
   function setRing(frac, color){
